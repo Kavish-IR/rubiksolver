@@ -4,11 +4,11 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class Cube:
     pts = np.zeros((54, 3), dtype='int')
-    color_names = ['white', 'red', 'orange', 'yellow', 'green', 'blue']
+    color_names = ['white', 'orange', 'blue', 'yellow', 'red', 'green']
     cs  = []
 
     def __init__(self):
-        idx = 0
+        idx = 0    
         for x in [-2, 0, 2]:
             for y in [-2, 0, 2]:
                 for s, c in enumerate(self.color_names):
@@ -96,7 +96,7 @@ class Cube:
 
 if __name__ == "__main__":
     c = Cube()
-    c.rotate_front(1)
+    #c.rotate_front(1)
     # c.rotate_left(1)
     # c.rotate_up(2)
     # c.rotate_down(1)
