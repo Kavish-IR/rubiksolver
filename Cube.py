@@ -21,29 +21,31 @@ class Cube:
                     idx += 1
     
     def rotate_up(self, n):
-        self.rotate_z(n, up=True)
+        self.rotate_z(n, 'up')
     
     def rotate_down(self, n):
-        self.rotate_z(n, up=False)
+        self.rotate_z(n, 'down')
         
     def rotate_left(self, n):
-        self.rotate_x(n, right=False)
+        self.rotate_x(n, 'left')
     
     def rotate_right(self, n):
-        self.rotate_x(n, right=True)      
+        self.rotate_x(n, 'right')      
     
     def rotate_front(self, n):
-        self.rotate_y(n, front=True)
+        self.rotate_y(n, 'front')
     
     def rotate_back(self, n):
-        self.rotate_y(n, front=False)              
+        self.rotate_y(n, 'back')              
         
-    def rotate_x(self, n, right):
-        if right == True:
+    def rotate_x(self, n, edge = None):
+        if edge == 'right':
             idx_rot, = np.where(self.pts[:, 0] >=  2)
-        else:
+        elif edge == 'left':
             idx_rot, = np.where(self.pts[:, 0] <= -2)
-        
+        else:
+            idx_rot = np.arange(0, 54)
+            
         theta = n * (np.pi / 2)
         M = np.array([[np.cos(theta), -np.sin(theta)],
                       [np.sin(theta),  np.cos(theta)]],
@@ -51,11 +53,13 @@ class Cube:
         fs_rot = np.dot(self.pts[idx_rot, 1:], M)
         self.pts[idx_rot, 1:] = fs_rot
     
-    def rotate_y(self, n, front):
-        if front == True:
+    def rotate_y(self, n, edge = None):
+        if edge == 'front':
             idx_rot, = np.where(self.pts[:, 1] <= -2)
-        else:
+        elif edge == 'back':
             idx_rot, = np.where(self.pts[:, 1] >= 2)
+        else:
+            idx_rot = np.arange(0, 54)
             
         theta = n * (np.pi / 2)
         M = np.array([[np.cos(theta), -np.sin(theta)],
@@ -64,11 +68,13 @@ class Cube:
         fs_rot = np.dot(self.pts[idx_rot, 0::2], M)
         self.pts[idx_rot, 0::2] = fs_rot
     
-    def rotate_z(self, n, up):
-        if up == True:
+    def rotate_z(self, n, edge=None):
+        if edge == 'up':
             idx_rot, = np.where(self.pts[:, 2] >=  2)
-        else:
+        elif edge == 'down':
             idx_rot, = np.where(self.pts[:, 2] <= -2)
+        else:
+            idx_rot = np.arange(0, 54)            
             
         theta = n * (np.pi / 2)
         M = np.array([[np.cos(theta), -np.sin(theta)],
@@ -128,5 +134,7 @@ class Cube:
 if __name__ == "__main__":
     c = Cube()
     #c.cloud_plot()
+    c.cube_plot()
+    c.rotate_z(-1)
     c.cube_plot()
     plt.show()
