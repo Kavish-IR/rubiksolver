@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 class Cube:
     pts = np.zeros((54, 3), dtype='int')
     color_names = ['white', 'orange', 'blue', 'yellow', 'red', 'green']
     cs  = []
-
+    
     def __init__(self):
         idx = 0    
         for x in [-2, 0, 2]:
@@ -18,22 +19,22 @@ class Cube:
                     self.pts[idx, (idx+2) % 3] = z
                     self.cs.append(c)
                     idx += 1
-
+    
     def rotate_up(self, n):
         self.rotate_z(n, up=True)
-
+    
     def rotate_down(self, n):
         self.rotate_z(n, up=False)
         
     def rotate_left(self, n):
         self.rotate_x(n, right=False)
-
+    
     def rotate_right(self, n):
         self.rotate_x(n, right=True)      
-
+    
     def rotate_front(self, n):
         self.rotate_y(n, front=True)
-
+    
     def rotate_back(self, n):
         self.rotate_y(n, front=False)              
         
@@ -49,8 +50,7 @@ class Cube:
                      dtype='int')
         fs_rot = np.dot(self.pts[idx_rot, 1:], M)
         self.pts[idx_rot, 1:] = fs_rot
-
-        
+    
     def rotate_y(self, n, front):
         if front == True:
             idx_rot, = np.where(self.pts[:, 1] <= -2)
@@ -63,8 +63,7 @@ class Cube:
                      dtype='int')
         fs_rot = np.dot(self.pts[idx_rot, 0::2], M)
         self.pts[idx_rot, 0::2] = fs_rot
-
-        
+    
     def rotate_z(self, n, up):
         if up == True:
             idx_rot, = np.where(self.pts[:, 2] >=  2)
@@ -77,8 +76,7 @@ class Cube:
                      dtype='int')
         fs_rot = np.dot(self.pts[idx_rot, 0:2], M)
         self.pts[idx_rot, 0:2] = fs_rot
-
-        
+    
     def cloud_plot(self, ax=None):
         if ax is None:
             fig = plt.figure(figsize=(8,8))
@@ -88,19 +86,47 @@ class Cube:
         ax.set_xlim([-3.01,3.01])
         ax.set_ylim([-3.01,3.01])
         ax.set_zlim([-3.01,3.01])
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
+        ax.axis('off')
         plt.axis('equal')
         return ax
 
+    def cube_plot(self, ax=None):
+        if ax is None:
+            fig = plt.figure(figsize=(8,8))
+            ax = fig.add_subplot(111, projection='3d')
+        
+        for idx, p in enumerate(self.pts):
+            if abs(p[2]) > 2.5:
+                xs = np.linspace(p[0]-1, p[0]+1, 2)
+                ys = np.linspace(p[1]-1, p[1]+1, 2)                
+                xs,ys = np.meshgrid(xs,ys)
+                zs = p[2] * np.ones(np.shape(xs))
+
+            if abs(p[0]) > 2.5:
+                ys = np.linspace(p[1]-1, p[1]+1, 2)
+                zs = np.linspace(p[2]-1, p[2]+1, 2)                
+                ys,zs = np.meshgrid(ys,zs)
+                xs = p[0] * np.ones(np.shape(zs))
+
+            if abs(p[1]) > 2.5:
+                xs = np.linspace(p[0]-1, p[0]+1, 2)
+                zs = np.linspace(p[2]-1, p[2]+1, 2)                
+                xs,zs = np.meshgrid(xs,zs)
+                ys = p[1] * np.ones(np.shape(xs))
+                                
+            ax.plot_surface(xs,ys,zs, color = self.cs[idx],
+                            edgecolor='k', shade=False, linewidth=3)
+                
+        ax.set_xlim([-3.01,3.01])
+        ax.set_ylim([-3.01,3.01])
+        ax.set_zlim([-3.01,3.01])
+        ax.axis('off')
+        plt.axis('equal')
+        return ax
+
+    
 if __name__ == "__main__":
     c = Cube()
-    #c.rotate_front(1)
-    # c.rotate_left(1)
-    # c.rotate_up(2)
-    # c.rotate_down(1)
-    # c.rotate_right(1)
-    # c.rotate_back(2)
-    c.cloud_plot()
+    #c.cloud_plot()
+    c.cube_plot()
     plt.show()
