@@ -2,11 +2,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from matplotlib.patches import Rectangle
 
 class Cube:
     pts = np.zeros((54, 3), dtype='int')
+    faces = np.zeros((6, 3, 3), dtype='int')
+    
     color_names = ['white', 'orange', 'blue', 'yellow', 'red', 'green']
     cs  = []
+    
+    color_dict = {0 : 'white',  1 : 'orange', 2 : 'blue',
+                  3 : 'yellow', 4 : 'red',    5 : 'green',
+                  'white'  : 0, 'orange' : 1, 'blue' :  2,
+                  'yellow' : 3, 'red'    : 4, 'green' : 5}
+    
+    face_dict = {0 : 'front', 1 : 'right', 2 : 'back',
+                 3 : 'left',  4 : 'up',    5 : 'down',
+                 'front' : 0, 'right' : 1, 'back' : 2,
+                 'left'  : 3, 'up'    : 4, 'down' : 5} 
     
     def __init__(self):
         idx = 0    
@@ -14,12 +27,40 @@ class Cube:
             for y in [-2, 0, 2]:
                 for s, c in enumerate(self.color_names):
                     z = (-1)**s * 3
+
+                    # Fill point array
                     self.pts[idx, (idx+0) % 3] = x
                     self.pts[idx, (idx+1) % 3] = y
                     self.pts[idx, (idx+2) % 3] = z
                     self.cs.append(c)
+
+                    # Fill face array
+                    f, i_f, j_f = self.point_to_face_idx(self.pts[idx,:])
+                    self.faces[f, i_f, j_f] = self.color_dict[c]
+                    
+                    # Advance index
                     idx += 1
-    
+                    
+    def point_to_face_idx(self, pt):
+        x,y,z = pt
+        if   z ==  3:
+            return self.face_dict['up'], int((2+x) / 2), int((2+y) / 2)
+        elif z == -3:
+            return self.face_dict['down'], int((2+x) / 2), 2 - int((2+y) / 2)
+        elif x ==  3:
+            return self.face_dict['right'], int((2+y) / 2), int((2+z) / 2)
+        elif x == -3:
+            return self.face_dict['left'], 2 - int((2+y) / 2), int((2+z) / 2)
+        elif y ==  3:
+            return self.face_dict['back'], 2 - int((2+x) / 2), int((2+z) / 2)
+        elif y == -3:
+            return self.face_dict['front'], int((2+x) / 2), int((2+z) / 2)
+
+    def update_faces(self, idx_rot):
+        for idx in idx_rot:
+            f, i_f, j_f = self.point_to_face_idx(self.pts[idx, :])
+            self.faces[f, i_f, j_f] = self.color_dict[self.cs[idx]]
+        
     def rotate_up(self, n):
         self.rotate_z(n, 'up')
     
@@ -52,6 +93,8 @@ class Cube:
                      dtype='int')
         fs_rot = np.dot(self.pts[idx_rot, 1:], M)
         self.pts[idx_rot, 1:] = fs_rot
+        self.update_faces(idx_rot)
+
     
     def rotate_y(self, n, edge = None):
         if edge == 'front':
@@ -67,6 +110,7 @@ class Cube:
                      dtype='int')
         fs_rot = np.dot(self.pts[idx_rot, 0::2], M)
         self.pts[idx_rot, 0::2] = fs_rot
+        self.update_faces(idx_rot)
     
     def rotate_z(self, n, edge=None):
         if edge == 'up':
@@ -82,6 +126,7 @@ class Cube:
                      dtype='int')
         fs_rot = np.dot(self.pts[idx_rot, 0:2], M)
         self.pts[idx_rot, 0:2] = fs_rot
+        self.update_faces(idx_rot)
     
     def cloud_plot(self, ax=None):
         if ax is None:
@@ -130,11 +175,41 @@ class Cube:
         plt.axis('equal')
         return ax
 
+    def face_plot(self):
+        fig, axs = plt.subplots(2,3)        
+        
+        for f in range(6):
+            i = f % 3
+            j = int(f / 3)
+            ax = axs[j][i]
+            
+            for s in range(9):
+                i_f = s % 3
+                j_f = int(s / 3)
+                x = i_f
+                y = j_f
+                ax.add_patch(Rectangle((x, y), width = 1, height = 1,
+                                       facecolor = self.color_dict[self.faces[f, i_f, j_f]],
+                                       linewidth=2,
+                                       edgecolor='k'))
+                ax.set_title(self.face_dict[f])
+                ax.set_xlim(0, 3)
+                ax.set_ylim(0, 3)                
+                ax.axis('equal')
+                ax.axis('off')
+                
+        plt.tight_layout()
+        return axs
+
+
     
 if __name__ == "__main__":
     c = Cube()
     #c.cloud_plot()
+    #c.cube_plot()
+    c.rotate_up(-1)
+    c.rotate_left(1)
+    c.rotate_front(1)
     c.cube_plot()
-    c.rotate_z(-1)
-    c.cube_plot()
+    c.face_plot()
     plt.show()
