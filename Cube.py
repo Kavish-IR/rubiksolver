@@ -4,28 +4,28 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.patches import Rectangle
 
+color_dict = {0 : 'white',  1 : 'orange', 2 : 'blue',
+              3 : 'yellow', 4 : 'red',    5 : 'green',
+              'white'  : 0, 'orange' : 1, 'blue' :  2,
+              'yellow' : 3, 'red'    : 4, 'green' : 5}
+    
+face_dict = {0 : 'front', 1 : 'right', 2 : 'back',
+             3 : 'left',  4 : 'up',    5 : 'down',
+             'front' : 0, 'right' : 1, 'back' : 2,
+             'left'  : 3, 'up'    : 4, 'down' : 5} 
+
+color_names = ['white', 'orange', 'blue', 'yellow', 'red', 'green']
+
 class Cube:
     pts = np.zeros((54, 3), dtype='int')
     faces = np.zeros((6, 3, 3), dtype='int')
-    
-    color_names = ['white', 'orange', 'blue', 'yellow', 'red', 'green']
     cs  = []
-    
-    color_dict = {0 : 'white',  1 : 'orange', 2 : 'blue',
-                  3 : 'yellow', 4 : 'red',    5 : 'green',
-                  'white'  : 0, 'orange' : 1, 'blue' :  2,
-                  'yellow' : 3, 'red'    : 4, 'green' : 5}
-    
-    face_dict = {0 : 'front', 1 : 'right', 2 : 'back',
-                 3 : 'left',  4 : 'up',    5 : 'down',
-                 'front' : 0, 'right' : 1, 'back' : 2,
-                 'left'  : 3, 'up'    : 4, 'down' : 5} 
-    
+        
     def __init__(self):
         idx = 0    
         for x in [-2, 0, 2]:
             for y in [-2, 0, 2]:
-                for s, c in enumerate(self.color_names):
+                for s, c in enumerate(color_names):
                     z = (-1)**s * 3
 
                     # Fill point array
@@ -36,7 +36,7 @@ class Cube:
 
                     # Fill face array
                     f, i_f, j_f = self.point_to_face_idx(self.pts[idx,:])
-                    self.faces[f, i_f, j_f] = self.color_dict[c]
+                    self.faces[f, i_f, j_f] = color_dict[c]
                     
                     # Advance index
                     idx += 1
@@ -44,22 +44,22 @@ class Cube:
     def point_to_face_idx(self, pt):
         x,y,z = pt
         if   z ==  3:
-            return self.face_dict['up'], int((2+x) / 2), int((2+y) / 2)
+            return face_dict['up'], int((2+x) / 2), int((2+y) / 2)
         elif z == -3:
-            return self.face_dict['down'], int((2+x) / 2), 2 - int((2+y) / 2)
+            return face_dict['down'], int((2+x) / 2), 2 - int((2+y) / 2)
         elif x ==  3:
-            return self.face_dict['right'], int((2+y) / 2), int((2+z) / 2)
+            return face_dict['right'], int((2+y) / 2), int((2+z) / 2)
         elif x == -3:
-            return self.face_dict['left'], 2 - int((2+y) / 2), int((2+z) / 2)
+            return face_dict['left'], 2 - int((2+y) / 2), int((2+z) / 2)
         elif y ==  3:
-            return self.face_dict['back'], 2 - int((2+x) / 2), int((2+z) / 2)
+            return face_dict['back'], 2 - int((2+x) / 2), int((2+z) / 2)
         elif y == -3:
-            return self.face_dict['front'], int((2+x) / 2), int((2+z) / 2)
+            return face_dict['front'], int((2+x) / 2), int((2+z) / 2)
 
     def update_faces(self, idx_rot):
         for idx in idx_rot:
             f, i_f, j_f = self.point_to_face_idx(self.pts[idx, :])
-            self.faces[f, i_f, j_f] = self.color_dict[self.cs[idx]]
+            self.faces[f, i_f, j_f] = color_dict[self.cs[idx]]
         
     def rotate_up(self, n):
         self.rotate_z(n, 'up')
@@ -188,11 +188,14 @@ class Cube:
                 j_f = int(s / 3)
                 x = i_f
                 y = j_f
-                ax.add_patch(Rectangle((x, y), width = 1, height = 1,
-                                       facecolor = self.color_dict[self.faces[f, i_f, j_f]],
+                c = color_dict[self.faces[f, i_f, j_f]]
+                ax.add_patch(Rectangle((x, y),
+                                       width = 1,
+                                       height = 1,
+                                       facecolor = c,
                                        linewidth=2,
                                        edgecolor='k'))
-                ax.set_title(self.face_dict[f])
+                ax.set_title(face_dict[f])
                 ax.set_xlim(0, 3)
                 ax.set_ylim(0, 3)                
                 ax.axis('equal')
@@ -200,13 +203,12 @@ class Cube:
                 
         plt.tight_layout()
         return axs
-
-
     
 if __name__ == "__main__":
     c = Cube()
     #c.cloud_plot()
     #c.cube_plot()
+    c.rotate_x(1)
     c.rotate_up(-1)
     c.rotate_left(1)
     c.rotate_front(1)
