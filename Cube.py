@@ -16,11 +16,23 @@ face_dict = {0 : 'front', 1 : 'right', 2 : 'back',
 
 color_names = ['white', 'orange', 'blue', 'yellow', 'red', 'green']
 
+idx_edge_pieces = [(f,i_f,j_f) for f in range(6)
+                   for i_f in range(3)
+                   for j_f in range(3)
+                   if (i_f == 1 or j_f == 1) and i_f != j_f]
+
+idx_corner_pieces = [(f, i_f, j_f) for f in range(6)
+                     for i_f in range(3)
+                     for j_f in range(3)
+                     if (i_f != 1 and j_f != 1)]
+
+idx_center_pieces = [(f, 1, 1) for f in range(6)]
+
 class Cube:
     pts = np.zeros((54, 3), dtype='int')
     faces = np.zeros((6, 3, 3), dtype='int')
     cs  = []
-        
+    
     def __init__(self):
         idx = 0    
         for x in [-2, 0, 2]:
@@ -127,7 +139,81 @@ class Cube:
         fs_rot = np.dot(self.pts[idx_rot, 0:2], M)
         self.pts[idx_rot, 0:2] = fs_rot
         self.update_faces(idx_rot)
+
+    def center_piece_idx(self, c):
+        idx_list = [idx for idx in idx_edge_pieces if color_dict[self.faces[idx]] == c]
+        return idx_list[0]        
+        
+    def edge_piece_idx(self, c):
+        return [idx for idx in idx_edge_pieces if color_dict[self.faces[idx]] == c]
     
+    def corner_piece_idx(self, c):
+        return [idx for idx in idx_corner_pieces if color_dict[self.faces[idx]] == c]
+
+    def edge_piece_adj_idx(self, idx):
+        f, i_f, j_f = idx
+
+        if face_dict[f] == 'up':
+            if i_f == 1 and j_f == 0:
+                return (face_dict['back'],  1, 2)
+            elif i_f == 1 and j_f == 2:
+                return (face_dict['front'], 1, 2)                
+            elif i_f == 0 and j_f == 1:
+                return (face_dict['left'],  1, 2)
+            elif i_f == 2 and j_f == 1:
+                return (face_dict['right'], 1, 2)
+            
+        elif face_dict[f] == 'down':
+            if   i_f == 1 and j_f == 0:
+                return (face_dict['back'], 1, 0)
+            elif i_f == 1 and j_f == 2:
+                return (face_dict['front'],  1, 0)                
+            elif i_f == 0 and j_f == 1:
+                return (face_dict['left'],  1, 0)
+            elif i_f == 2 and j_f == 1:
+                return (face_dict['right'], 1, 0)             
+
+        elif face_dict[f] == 'left':
+            if   i_f == 1 and j_f == 0:
+                return (face_dict['down'], 1, 0)
+            elif i_f == 1 and j_f == 2:
+                return (face_dict['up'],  0, 1)                
+            elif i_f == 0 and j_f == 1:
+                return (face_dict['back'],  2, 1)
+            elif i_f == 2 and j_f == 1:
+                return (face_dict['front'], 0, 1)             
+
+        elif face_dict[f] == 'right':
+            if   i_f == 1 and j_f == 0:
+                return (face_dict['down'], 2, 1)
+            elif i_f == 1 and j_f == 2:
+                return (face_dict['up'],  2, 1)                
+            elif i_f == 0 and j_f == 1:
+                return (face_dict['front'], 2, 1)
+            elif i_f == 2 and j_f == 1:
+                return (face_dict['back'], 0, 1)
+
+        elif face_dict[f] == 'front':
+            if   i_f == 1 and j_f == 0:
+                return (face_dict['down'], 1, 2)
+            elif i_f == 1 and j_f == 2:
+                return (face_dict['up'],  1, 0)                
+            elif i_f == 0 and j_f == 1:
+                return (face_dict['left'],  2, 1)
+            elif i_f == 2 and j_f == 1:
+                return (face_dict['right'], 0, 1)
+            
+        elif face_dict[f] == 'back':
+            if i_f == 0 and j_f == 1:
+                return (face_dict['right'],  2, 1)
+            elif i_f == 2 and j_f == 1:
+                return (face_dict['left'], 0, 1)            
+            elif i_f == 1 and j_f == 0:
+                return (face_dict['down'], 1, 0)
+            elif i_f == 1 and j_f == 2:
+                return (face_dict['up'],  1, 2)                
+            
+
     def cloud_plot(self, ax=None):
         if ax is None:
             fig = plt.figure(figsize=(8,8))
@@ -195,7 +281,7 @@ class Cube:
                                        facecolor = c,
                                        linewidth=2,
                                        edgecolor='k'))
-                ax.set_title(face_dict[f])
+                ax.set_title(face_dict[f] + " " + str(f))
                 ax.set_xlim(0, 3)
                 ax.set_ylim(0, 3)                
                 ax.axis('equal')
