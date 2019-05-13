@@ -154,10 +154,10 @@ class Cube:
         f, i_f, j_f = idx
 
         if face_dict[f] == 'up':
-            if i_f == 1 and j_f == 0:
-                return (face_dict['back'],  1, 2)
+            if   i_f == 1 and j_f == 0:
+                return (face_dict['front'],  1, 2)
             elif i_f == 1 and j_f == 2:
-                return (face_dict['front'], 1, 2)                
+                return (face_dict['back'], 1, 2)                
             elif i_f == 0 and j_f == 1:
                 return (face_dict['left'],  1, 2)
             elif i_f == 2 and j_f == 1:
@@ -175,7 +175,7 @@ class Cube:
 
         elif face_dict[f] == 'left':
             if   i_f == 1 and j_f == 0:
-                return (face_dict['down'], 1, 0)
+                return (face_dict['down'], 0, 1)
             elif i_f == 1 and j_f == 2:
                 return (face_dict['up'],  0, 1)                
             elif i_f == 0 and j_f == 1:
