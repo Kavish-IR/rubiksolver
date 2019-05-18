@@ -75,6 +75,22 @@ class Cube:
         elif y == -3:
             return face_dict['front'], int((2+x) / 2), int((2+z) / 2)
 
+    def face_idx_to_point(self, idx):
+        f,i,j = idx        
+        if   face_dict[f] == 'up':
+            return np.array([2*i-2,  2*j-2, 3], dtype='int')
+        elif face_dict[f] == 'down':
+            return np.array([2*i-2,  2-2*j, -3], dtype='int')
+        elif face_dict[f] == 'right':
+            return np.array([3, 2*i-2, 2*j-2], dtype='int')            
+        elif face_dict[f] == 'left':
+            return np.array([-3, 2-2*i, 2*j-2], dtype='int')
+        elif face_dict[f] == 'back':
+            return np.array([2-2*i,  3, 2*j-2], dtype='int')
+        elif face_dict[f] == 'front':
+            return np.array([2*i-2, -3, 2*j-2], dtype='int')                    
+
+        
     def update_faces(self, idx_rot):
         for idx in idx_rot:
             f, i_f, j_f = self.point_to_face_idx(self.pts[idx, :])
@@ -270,7 +286,10 @@ class Cube:
         ctr_pc_adj = (idx_adj[0], 1, 1)
         
         return self.faces[idx] == self.faces[ctr_pc] and self.faces[idx_adj] == self.faces[ctr_pc_adj]
-            
+
+    def edge_pieces_matching_color(self, c):
+        return [ep for ep in idx_edge_pieces if color_dict[self.faces[ep]] == c or self.faces[ep] == c]
+
     def cloud_plot(self, ax=None):
         if ax is None:
             fig = plt.figure(figsize=(8,8))
@@ -345,13 +364,14 @@ class Cube:
         return axs
     
 if __name__ == "__main__":
-    c = Cube()
-    c.cube_plot()
-    # c.rotate_face_to_face('back', 'up')
+    # c = Cube()
     # c.cube_plot()
-    # c.rotate_face_to_face('up', 'back')    
-    c.rotate_y(1)
-    c.cube_plot()
+    # # c.rotate_face_to_face('back', 'up')
+    # # c.cube_plot()
+    # # c.rotate_face_to_face('up', 'back')    
+    # c.rotate_y(1)
+    # c.cube_plot()
 
-    #c.face_plot()
-    plt.show()
+    # #c.face_plot()
+    # plt.show()
+    pass
