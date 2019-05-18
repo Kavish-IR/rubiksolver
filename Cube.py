@@ -113,7 +113,6 @@ class Cube:
                 else:
                     n_rot = -1
         
-            print(f1, f2, rot_ax, n_rot)
             # perform rotation
             if   abs(rot_ax[2]) == 1:
                 self.rotate_z(n_rot)
