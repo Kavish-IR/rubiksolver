@@ -14,6 +14,13 @@ face_dict = {0 : 'front', 1 : 'right', 2 : 'back',
              'front' : 0, 'right' : 1, 'back' : 2,
              'left'  : 3, 'up'    : 4, 'down' : 5} 
 
+face_normals = {'front' : np.array([ 0, -1,  0], dtype=int),
+                'back'  : np.array([ 0,  1,  0], dtype=int),
+                'left'  : np.array([-1,  0,  0], dtype=int),
+                'right' : np.array([ 1,  0,  0], dtype=int),
+                'up'    : np.array([ 0,  0,  1], dtype=int),
+                'down'  : np.array([ 0,  0, -1], dtype=int)}
+
 color_names = ['white', 'orange', 'blue', 'yellow', 'red', 'green']
 
 idx_edge_pieces = [(f,i_f,j_f) for f in range(6)
@@ -72,7 +79,50 @@ class Cube:
         for idx in idx_rot:
             f, i_f, j_f = self.point_to_face_idx(self.pts[idx, :])
             self.faces[f, i_f, j_f] = color_dict[self.cs[idx]]
+
+    def rotate_face_to_face(self, f1, f2):
+        # same faces, so nohting to do:
+        if f1 == f2:
+            pass
+
+        # faces to switch:
+        else :
+            n1 = face_normals[f1]
+            n2 = face_normals[f2]
+            rot_ax = np.cross(n1, n2)
+
+
+            # Zero rot_ax implies n1 and n2 are opposite faces
+            # and means we need to determine the rotation axis
+            if int(np.linalg.norm(rot_ax)) == 0:
+
+                # If n1 is parallel to x or y, we rotate 180 about z
+                if abs(n1[0]) == 1 or abs(n1[1]) == 1:
+                    rot_ax = face_normals['up']
+                    n_rot  = 2
+
+                # If n1 is parallel to z, we rotate 180 about x
+                if abs(n1[2]) == 1:
+                    rot_ax = face_normals['right']
+                    n_rot  = 2
+
+            # they're distinct faces, and we just need a single rotation
+            else:
+                if min(rot_ax) < 0:
+                    n_rot = 1
+                else:
+                    n_rot = -1
         
+            print(f1, f2, rot_ax, n_rot)
+            # perform rotation
+            if   abs(rot_ax[2]) == 1:
+                self.rotate_z(n_rot)
+            elif abs(rot_ax[0]) == 1:
+                self.rotate_x(n_rot)
+            elif abs(rot_ax[1]) == 1:
+                self.rotate_y(-n_rot)
+            
+            
     def rotate_up(self, n):
         self.rotate_z(n, 'up')
     
@@ -297,12 +347,12 @@ class Cube:
     
 if __name__ == "__main__":
     c = Cube()
-    #c.cloud_plot()
-    #c.cube_plot()
-    c.rotate_x(1)
-    c.rotate_up(-1)
-    c.rotate_left(1)
-    c.rotate_front(1)
     c.cube_plot()
-    c.face_plot()
+    # c.rotate_face_to_face('back', 'up')
+    # c.cube_plot()
+    # c.rotate_face_to_face('up', 'back')    
+    c.rotate_y(1)
+    c.cube_plot()
+
+    #c.face_plot()
     plt.show()
