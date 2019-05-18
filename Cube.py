@@ -141,7 +141,7 @@ class Cube:
         self.update_faces(idx_rot)
 
     def center_piece_idx(self, c):
-        idx_list = [idx for idx in idx_edge_pieces if color_dict[self.faces[idx]] == c]
+        idx_list = [idx for idx in idx_center_pieces if color_dict[self.faces[idx]] == c]
         return idx_list[0]        
         
     def edge_piece_idx(self, c):
@@ -150,6 +150,7 @@ class Cube:
     def corner_piece_idx(self, c):
         return [idx for idx in idx_corner_pieces if color_dict[self.faces[idx]] == c]
 
+    
     def edge_piece_adj_idx(self, idx):
         f, i_f, j_f = idx
 
@@ -213,7 +214,14 @@ class Cube:
             elif i_f == 1 and j_f == 2:
                 return (face_dict['up'],  1, 2)                
             
-
+    def edge_piece_solved(self, idx):
+        ctr_pc = (idx[0], 1, 1)
+        
+        idx_adj = self.edge_piece_adj_idx(idx)
+        ctr_pc_adj = (idx_adj[0], 1, 1)
+        
+        return self.faces[idx] == self.faces[ctr_pc] and self.faces[idx_adj] == self.faces[ctr_pc_adj]
+            
     def cloud_plot(self, ax=None):
         if ax is None:
             fig = plt.figure(figsize=(8,8))
@@ -275,11 +283,8 @@ class Cube:
                 x = i_f
                 y = j_f
                 c = color_dict[self.faces[f, i_f, j_f]]
-                ax.add_patch(Rectangle((x, y),
-                                       width = 1,
-                                       height = 1,
-                                       facecolor = c,
-                                       linewidth=2,
+                ax.add_patch(Rectangle((x, y), width = 1, height = 1,
+                                       facecolor = c, linewidth=2,
                                        edgecolor='k'))
                 ax.set_title(face_dict[f] + " " + str(f))
                 ax.set_xlim(0, 3)
