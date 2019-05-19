@@ -9,7 +9,7 @@ class Solver:
 
     def white_face_to_top(self):
         f = face_dict[c.center_piece_idx('white')[0]]
-        self.c.rotate_face_to_face(f, 'up')
+        self.c.rotate_cube_face_to_face(f, 'up')
 
     def remove_ep_from_right_edge(self, edge_to_switch):
         self.c.rotate_face_edge_to_edge('right', edge_to_switch, 'down')
@@ -29,7 +29,7 @@ class Solver:
                 target_face_piece = self.c.face_piece_matching_color(target_adj_face_color)
 
                 if ep_to_solve.face_name in ['front', 'back', 'left', 'right']:
-                    self.c.rotate_face_to_face(ep_to_solve.face_name, 'right')
+                    self.c.rotate_cube_face_to_face(ep_to_solve.face_name, 'right')
 
                     # Target color is on the right, so we're already on the correct side
                     if self.c.face_color('right') == adj_ep_to_solve.color_name:
@@ -39,7 +39,7 @@ class Solver:
                     else:
                         self.remove_ep_from_right_edge(adj_ep_to_solve.face_name)
                         self.c.rotate_face_edge_to_edge('down', 'front', target_face_piece.face_name)
-                        self.c.rotate_face_to_face(target_face_piece.face_name, 'right')
+                        self.c.rotate_cube_face_to_face(target_face_piece.face_name, 'right')
                         self.c.rotate_face_edge_to_edge('right', 'down', 'front')
 
                     # the piece is now on the right face, front edge. solve
@@ -48,14 +48,16 @@ class Solver:
                     self.c.rotate_up(-1)
 
                 else:
-                    self.c.rotate_face_to_face(adj_ep_to_solve.face_name, 'right')                    
+                    self.c.rotate_cube_face_to_face(adj_ep_to_solve.face_name, 'right')                    
                     if ep_to_solve.face_name == 'up':
                         self.c.rotate_right(2)
                     self.c.rotate_face_edge_to_edge('down', adj_ep_to_solve.face_name, target_face_piece.face_name)
-                    self.c.rotate_face_to_face(target_face_piece.face_name, 'right')
+                    self.c.rotate_cube_face_to_face(target_face_piece.face_name, 'right')
                     self.c.rotate_right(2)
             
-            
+    # def solve_white_corners(self):
+    #     pass
+                    
 if __name__ == '__main__':
     c = Cube()
 

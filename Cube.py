@@ -172,7 +172,7 @@ class Cube:
             self.pieces[ii].update_indices(self.pts[ii, :], idx)
             self.pieces_cube[idx]  = self.pieces[ii]
 
-    def rotate_face_to_face(self, f1, f2):
+    def rotate_cube_face_to_face(self, f1, f2):
         # same faces, so nohting to do:
         if f1 == f2:
             pass
@@ -507,9 +507,9 @@ if __name__ == "__main__":
     # c.cube_plot()
     #c.cube_plot()
     #c.square_plot()
-    #c.rotate_face_to_face('back', 'up')
+    #c.rotate_cube_face_to_face('back', 'up')
     # # # c.cube_plot()
-    #c.rotate_face_to_face('up', 'back')    
+    #c.rotate_cube_face_to_face('up', 'back')    
     # c.rotate_y(1)
     # c.cube_plot()
 
