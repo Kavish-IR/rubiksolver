@@ -444,9 +444,9 @@ class Cube:
         self.pts[ii_rot, 0:2] = fs_rot
         self.update_after_rotation(ii_rot)
 
-    def face_color(self, face):
-        face = face_dict[face]
-        return self.pieces_cube[face_dict['right'], 1, 1].color_name
+    def face_color(self, face_name):
+        face = face_dict[face_name]
+        return self.pieces_cube[face, 1, 1].color_name
         
     def center_piece_idx(self, color_name):
         idx_list = [idx for idx in idx_center_pieces if self.pieces_cube[idx].color_name == color_name]
@@ -505,10 +505,14 @@ class Cube:
         return [pc for pc in self.pieces if
                 pc.idx in idx_edge_pieces and (pc.color_name == c or pc.color_name == color_dict[c])]
 
-    def face_piece_matching_color(self, c):
+    def center_piece_matching_color(self, c):
         return [pc for pc in self.pieces if
                 pc.idx in idx_center_pieces and (pc.color_name == c or pc.color_name == color_dict[c])][0]
 
+    def corner_pieces_matching_color(self, c):
+        return [pc for pc in self.pieces if
+                pc.idx in idx_corner_pieces and (pc.color_name == c or pc.color_name == color_dict[c])]
+    
         
     def cloud_plot(self, ax=None):
         if ax is None:

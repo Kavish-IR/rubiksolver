@@ -26,7 +26,7 @@ class Solver:
             if not c.edge_piece_solved(ep_to_solve):
                 # use the adjacent piece to identify the target face color
                 target_adj_face_color = adj_ep_to_solve.color_name
-                target_face_piece = self.c.face_piece_matching_color(target_adj_face_color)
+                target_face_piece = self.c.center_piece_matching_color(target_adj_face_color)
 
                 if ep_to_solve.face_name in ['front', 'back', 'left', 'right']:
                     self.c.rotate_cube_face_to_face(ep_to_solve.face_name, 'right')
@@ -56,6 +56,19 @@ class Solver:
                     self.c.rotate_right(2)
             
     # def solve_white_corners(self):
+    #     # White corner pieces:
+    #     white_corner_pieces = self.c.corner_pieces_matching_color('white')
+    #     print(white_corner_pieces)
+        
+    #     # we will solve the corners one-by-one clock-wise
+    #     for i in range(1):
+    #         pt_corner_to_solve = np.array([2, -2, 3], dtype='int')
+    #         colors_to_solve = [c.face_color('right'), c.face_color('front')]
+    #         print(colors_to_solve)
+    #         #print(c.pt_to_corner(pt_corner_to_solve))
+            
+    #         #set(['front', 'right', 'up'])
+            
     #     pass
                     
 if __name__ == '__main__':
@@ -88,7 +101,8 @@ if __name__ == '__main__':
     
     s = Solver(c)
 
-    c.cube_plot()
+    #c.cube_plot()
     s.solve_white_cross()
     c.cube_plot()
+    #s.solve_white_corners()
     plt.show()
