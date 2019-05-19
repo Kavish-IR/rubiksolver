@@ -466,6 +466,32 @@ class Cube:
         color_adj_ctr = self.pieces_cube[idx_adj_ctr].color_name
         
         return color == color_ctr and color_adj == color_adj_ctr
+
+    def corner_piece_solved(self, pc):
+        if pc.piece_type != 'corner':
+            raise Exception("Bad input to corner_piece_solved... not a corner piece!")
+        
+        adj_pcs = pc.adj_pieces
+        
+        idx = pc.idx
+        idx_ctr = (idx[0], 1, 1)
+        color = pc.color_name
+        color_ctr = self.pieces_cube[idx_ctr].color_name
+       
+        adj_pc1  = adj_pcs[0]
+        idx_adj1 = adj_pc1.idx        
+        idx_adj1_ctr = (idx_adj1[0], 1, 1)
+        color_adj1 = adj_pc1.color_name
+        color_adj1_ctr = self.pieces_cube[idx_adj1_ctr].color_name        
+
+        adj_pc2  = adj_pcs[1]
+        idx_adj2 = adj_pc2.idx
+        idx_adj2_ctr = (idx_adj2[0], 1, 1)
+        color_adj2 = adj_pc2.color_name
+        color_adj2_ctr = self.pieces_cube[idx_adj2_ctr].color_name        
+        
+        return (color, color_adj1, color_adj2) == (color_ctr, color_adj1_ctr, color_adj2_ctr)
+
     
     def edge_pieces_matching_color(self, c):
         return [pc for pc in self.pieces if
@@ -553,8 +579,8 @@ class Cube:
 if __name__ == "__main__":
     c = Cube()
 
-    # ## Sample test config 2:
-    # c.rotate_right(2)
+    ## Sample test config 2:
+    #c.rotate_right(2)
     # c.rotate_left(2)
     # c.rotate_down(1)
     # c.rotate_right(2)
@@ -565,16 +591,18 @@ if __name__ == "__main__":
     # c.rotate_x(1)
     # c.rotate_x(-1)
 
-    c.cube_plot()
+    #c.cube_plot()
     
-    idx1 = c.point_to_idx(np.array([-2, -3, 2], dtype=int))
-    idx2 = c.point_to_idx(np.array([ 2,  2, 3], dtype=int))    
-    cp1 = c.pieces_cube[idx2]
-    cp2 = c.pieces_cube[idx1]
-    print(cp1.corner(), cp2.corner())
+    # idx1 = c.point_to_idx(np.array([-2, -3, 2], dtype=int))
+    # idx2 = c.point_to_idx(np.array([ 2,  2, 3], dtype=int))    
+    # cp1 = c.pieces_cube[idx2]
+    # cp2 = c.pieces_cube[idx1]
+    # print(cp1.corner(), cp2.corner())
 
-    c.rotate_cube_corner_to_corner(cp1.corner(), cp2.corner())
+    # c.rotate_cube_corner_to_corner(cp1.corner(), cp2.corner())
     
     c.cube_plot()
     #c.square_plot()
+    cp = c.pieces_cube[idx_corner_pieces[0]]
+    print(cp.pt, c.corner_piece_solved(cp))
     plt.show()
