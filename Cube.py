@@ -53,6 +53,11 @@ class Piece:
         self.idx = idx
         self.face = idx[0]
         self.face_name = face_dict[self.face]
+        
+    def corner(self):
+        if self.piece_type != 'corner':
+            raise Exception("Not a corner piece!")        
+        return set([self.face_name, self.adj_pieces[0].face_name, self.adj_pieces[1].face_name])
             
 class Cube:
     pts = np.zeros((54, 3), dtype='int')
@@ -74,7 +79,7 @@ class Cube:
                     self.cs.append(c)
 
                     # Fill square array
-                    idx = self.point_to_square_idx(self.pts[ii,:])                    
+                    idx = self.point_to_idx(self.pts[ii,:])                    
 
                     # Get piece type
                     if idx in idx_center_pieces:
@@ -117,7 +122,7 @@ class Cube:
             adj_pieces = [self.pieces[ii] for ii in adj_ii]
             pc.adj_pieces = adj_pieces
 
-    def point_to_square_idx(self, pt):
+    def point_to_idx(self, pt):
         x,y,z = pt
         if   z ==  3:
             return face_dict['up'], int((2+x) / 2), int((2+y) / 2)
@@ -132,7 +137,7 @@ class Cube:
         elif y == -3:
             return face_dict['front'], int((2+x) / 2), int((2+z) / 2)
 
-    def square_idx_to_point(self, idx):
+    def idx_to_point(self, idx):
         f,i,j = idx
         if   face_dict[f] == 'up':
             return np.array([2*i-2,  2*j-2, 3], dtype='int')
@@ -158,7 +163,7 @@ class Cube:
        
     def update_after_rotation(self, ii_rot):
         for ii in ii_rot:
-            idx = self.point_to_square_idx(self.pts[ii, :])
+            idx = self.point_to_idx(self.pts[ii, :])
             self.pieces[ii].update_indices(self.pts[ii, :], idx)
             self.pieces_cube[idx]  = self.pieces[ii]
 
@@ -243,7 +248,46 @@ class Cube:
                 self.rotate_x(n_rot, edge=f)
             elif abs(rot_ax[1]) == 1:
                 self.rotate_y(-n_rot, edge=f)
-                
+
+    def rotate_face_corner_to_corner(self, f, c1, c2):
+        c1 = list(c1)
+        c2 = list(c2)
+        
+        # same faces, so nothing to do:
+        if c1 == c2:
+            pass
+
+        # faces to switch:
+        else :
+            c1.remove(f)
+            c2.remove(f)
+            
+            v1 = face_normals[c1[0]] + face_normals[c1[1]]
+            v2 = face_normals[c2[0]] + face_normals[c2[1]]
+            rot_ax = np.cross(v1, v2)
+
+            # v1 and v2 are not parallel, so it's a +/- 90* turn
+            if np.linalg.norm(rot_ax) > 0:
+                rot_ax = rot_ax / np.linalg.norm(rot_ax)
+                rot_ax = rot_ax.astype(int)
+                if max(rot_ax) > 0:
+                    n_rot  = -1
+                else:
+                    n_rot = 1
+                    
+            # v1 and v2 are parallel, so it's a 180* turn
+            else:
+                n_rot = 2
+                rot_ax = face_normals[f]
+            
+            # perform rotation
+            f = face_dict[f]
+            if   abs(rot_ax[2]) == 1:
+                self.rotate_z(n_rot, edge=f)
+            elif abs(rot_ax[0]) == 1:
+                self.rotate_x(n_rot, edge=f)
+            elif abs(rot_ax[1]) == 1:
+                self.rotate_y(-n_rot, edge=f)
             
     def rotate_up(self, n):
         self.rotate_z(n, 'up')
@@ -429,13 +473,30 @@ class Cube:
 if __name__ == "__main__":
     c = Cube()
 
-    idx = idx_edge_pieces[0]
-    print(c.piece_cube[idx].color_name,
-          c.piece_cube[idx].ii,
-          c.piece_cube[idx].piece_type,
-          c.piece_cube[idx].idx,
-          c.piece_cube[idx].face_name,
-          c.piece_cube[idx].pt)
+    ## Sample test config 2:
+    c.rotate_right(2)
+    c.rotate_left(2)
+    c.rotate_down(1)
+    c.rotate_right(2)
+    c.rotate_up(1)
+    c.rotate_right(1)
+    c.rotate_front(1)
+    c.rotate_down(1)
+    c.rotate_x(1)
+    c.rotate_x(-1)
+
+    c.cube_plot()
+    
+    idx1 = c.point_to_idx(np.array([2, -3, -2 ], dtype=int))
+    idx2 = c.point_to_idx(np.array([-2, -3,  2], dtype=int))    
+    cp1 = c.pieces_cube[idx2]
+    cp2 = c.pieces_cube[idx1]
+    
+    print(idx1, idx2)
+    print(cp1.corner(), cp1.color_name)
+    print(cp2.corner(), cp2.color_name)
+    c.rotate_face_corner_to_corner('front', cp1.corner(), cp2.corner())
+    
     # ii = c.piece_cube[idx].ii
     
     # c.cube_plot()
@@ -455,7 +516,6 @@ if __name__ == "__main__":
     #       c.piece_cube[idx].idx,
     #       c.piece_cube[idx].pt)
     
-    #c.cube_plot()
+    c.cube_plot()
     #c.square_plot()
-    #plt.show()
-    pass
+    plt.show()
