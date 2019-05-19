@@ -14,6 +14,17 @@ face_dict = {0 : 'front', 1 : 'right', 2 : 'back',
              'front' : 0, 'right' : 1, 'back' : 2,
              'left'  : 3, 'up'    : 4, 'down' : 5} 
 
+opposite_face = {
+    'front' : 'back',  'left' : 'right', 'up' : 'down',
+    'back'  : 'front', 'right' : 'left', 'down' : 'up',
+    face_dict['front'] : face_dict['back'],
+    face_dict['back']  : face_dict['front'],    
+    face_dict['right'] : face_dict['left'],
+    face_dict['left']  : face_dict['right'],    
+    face_dict['up'] : face_dict['down'],
+    face_dict['down']  : face_dict['up']    
+}
+
 face_normals = {'front' : np.array([ 0, -1,  0], dtype=int),
                 'back'  : np.array([ 0,  1,  0], dtype=int),
                 'left'  : np.array([-1,  0,  0], dtype=int),
@@ -165,7 +176,10 @@ class Cube:
     
     def edge_of_idx(self, idx):
         pass
-       
+
+    def corner_pieces(self, corner):
+        return [cp for cp in self.pieces if cp.piece_type == 'corner' and cp.corner() == corner]
+    
     def update_after_rotation(self, ii_rot):
         for ii in ii_rot:
             idx = self.point_to_idx(self.pts[ii, :])
@@ -253,6 +267,67 @@ class Cube:
                 self.rotate_x(n_rot, edge=f)
             elif abs(rot_ax[1]) == 1:
                 self.rotate_y(-n_rot, edge=f)
+
+                
+    def rotate_cube_corner_to_corner(self, c1, c2):
+        # we will keep track of where c1 goes using one of its pieces
+        c1_pieces = self.corner_pieces(c1)
+        #c2_pieces = self.corner_pieces(c2)
+
+        # we may mutate these below
+        c1 = list(c1)
+        c2 = list(c2)
+        
+        if c1 == c2:
+            pass
+        else:
+            # list of common faces
+            f_common = list(set(c1).intersection(set(c2)))
+
+            # if any faces are in common, use the first
+            if f_common:
+                f_common = f_common[0]
+
+            # no faces in common, so every face of c1 is opposite c2
+            # so we'll rotate the cube to flip the first face of c2 with its opposite
+            # (which corresponds to one of c1's faces
+            else:
+                f_common = c2[0]
+                c.rotate_cube_face_to_face(opposite_face[f_common], f_common)
+                c1 = list(c1_pieces[0].corner())
+
+            # Now we have c1 and c2 on the face f_common, we'll use the same
+            # steps as the face corner-to-corner algorithm from here. 
+            c1.remove(f_common)
+            c2.remove(f_common)
+            
+            v1 = face_normals[c1[0]] + face_normals[c1[1]]
+            v2 = face_normals[c2[0]] + face_normals[c2[1]]
+            rot_ax = np.cross(v1, v2)
+
+            # v1 and v2 are not parallel, so it's a +/- 90* turn
+            if np.linalg.norm(rot_ax) > 0:
+                rot_ax = rot_ax / np.linalg.norm(rot_ax)
+                rot_ax = rot_ax.astype(int)
+                if max(rot_ax) > 0:
+                    n_rot  = -1
+                else:
+                    n_rot = 1
+                    
+            # v1 and v2 are parallel, so it's a 180* turn
+            else:
+                n_rot = 2
+                rot_ax = face_normals[f_common]
+            
+            # perform rotation
+            if   abs(rot_ax[2]) == 1:
+                self.rotate_z(n_rot)
+            elif abs(rot_ax[0]) == 1:
+                self.rotate_x(n_rot)
+            elif abs(rot_ax[1]) == 1:
+                self.rotate_y(-n_rot)
+
+                
 
     def rotate_face_corner_to_corner(self, f, c1, c2):
         c1 = list(c1)
@@ -478,55 +553,27 @@ class Cube:
 if __name__ == "__main__":
     c = Cube()
 
-    ## Sample test config 2:
-    c.rotate_right(2)
-    c.rotate_left(2)
-    c.rotate_down(1)
-    c.rotate_right(2)
-    c.rotate_up(1)
-    c.rotate_right(1)
-    c.rotate_front(1)
-    c.rotate_down(1)
-    c.rotate_x(1)
-    c.rotate_x(-1)
+    # ## Sample test config 2:
+    # c.rotate_right(2)
+    # c.rotate_left(2)
+    # c.rotate_down(1)
+    # c.rotate_right(2)
+    # c.rotate_up(1)
+    # c.rotate_right(1)
+    # c.rotate_front(1)
+    # c.rotate_down(1)
+    # c.rotate_x(1)
+    # c.rotate_x(-1)
 
     c.cube_plot()
     
-    idx1 = c.point_to_idx(np.array([2, -3, -2 ], dtype=int))
-    idx2 = c.point_to_idx(np.array([-2, -3,  2], dtype=int))    
+    idx1 = c.point_to_idx(np.array([-2, -3, 2], dtype=int))
+    idx2 = c.point_to_idx(np.array([ 2,  2, 3], dtype=int))    
     cp1 = c.pieces_cube[idx2]
     cp2 = c.pieces_cube[idx1]
-    
-    print(idx1, idx2)
-    print(cp1.corner(), cp1.color_name)
-    print(cp2.corner(), cp2.color_name)
-    c.rotate_face_corner_to_corner('front', cp1.corner(), cp2.corner())
-    
-    # ii = c.piece_cube[idx].ii
-    
-    # c.cube_plot()
-    #c.cube_plot()
-    #c.square_plot()
-    #c.rotate_cube_face_to_face('back', 'up')
-    # # # c.cube_plot()
-    #c.rotate_cube_face_to_face('up', 'back')    
-    # c.rotate_y(1)
-    # c.cube_plot()
+    print(cp1.corner(), cp2.corner())
 
-    #    idx = c.pieces[ii].idx
-    
-    # print(c.piece_cube[idx].color_name,
-    #       c.piece_cube[idx].ii,          
-    #       c.piece_cube[idx].piece_type,
-    #       c.piece_cube[idx].idx,
-    #       c.piece_cube[idx].pt)
-
-
-    idx = c.point_to_idx(np.array([3, 0, 2], dtype=int))
-    ep  = c.pieces_cube[idx]
-    print()
-    print(ep.pt, ep.color_name, ep.edge())
-                           
+    c.rotate_cube_corner_to_corner(cp1.corner(), cp2.corner())
     
     c.cube_plot()
     #c.square_plot()
