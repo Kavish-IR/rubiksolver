@@ -349,7 +349,7 @@ class Cube:
 
     def face_piece_matching_color(self, c):
         return [pc for pc in self.pieces if
-                pc.idx in idx_edge_pieces and (pc.color_name == c or pc.color_name == color_dict[c])][0]
+                pc.idx in idx_center_pieces and (pc.color_name == c or pc.color_name == color_dict[c])][0]
 
         
     def cloud_plot(self, ax=None):
@@ -365,7 +365,7 @@ class Cube:
         plt.axis('equal')
         return ax
 
-    def cube_plot(self, ax=None):
+    def cube_plot(self, ax=None, title_str=""):
         if ax is None:
             fig = plt.figure(figsize=(8,8))
             ax = fig.add_subplot(111, projection='3d')
@@ -396,6 +396,7 @@ class Cube:
         ax.set_ylim([-3.01,3.01])
         ax.set_zlim([-3.01,3.01])
         ax.axis('off')
+        ax.set_title(title_str)
         plt.axis('equal')
         return ax
 
@@ -412,7 +413,7 @@ class Cube:
                 j_f = int(s / 3)
                 x = i_f
                 y = j_f
-                c = self.pieces_cube[f, i_f, j_f].color_name,
+                c = self.pieces_cube[f, i_f, j_f].color_name
                 ax.add_patch(Rectangle((x, y), width = 1, height = 1,
                                        facecolor = c, linewidth=2,
                                        edgecolor='k'))
