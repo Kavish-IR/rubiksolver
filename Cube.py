@@ -35,31 +35,88 @@ idx_corner_pieces = [(f, i_f, j_f) for f in range(6)
 
 idx_center_pieces = [(f, 1, 1) for f in range(6)]
 
+
+class Piece:
+    def __init__(self, color_name, piece_type, ii, pt, idx, adj_pieces = []):
+        self.color_name = color_name
+        self.color      = color_dict[color_name]
+        self.piece_type = piece_type
+        self.ii = ii        
+        self.pt = pt
+        self.idx = idx
+        self.face      = idx[0]
+        self.face_name = face_dict[self.face]
+        self.adj_pieces = adj_pieces
+
+    def update_indices(self, pt, idx):
+        self.pt = pt
+        self.idx = idx
+        self.face = idx[0]
+        self.face_name = face_dict[self.face]
+            
 class Cube:
     pts = np.zeros((54, 3), dtype='int')
-    squares = np.zeros((6, 3, 3), dtype='int')
+    pieces  = np.zeros(54, dtype=Piece)
+    pieces_cube = np.zeros((6, 3, 3), dtype=Piece)
     cs  = []
     
     def __init__(self):
-        idx = 0    
+        ii = 0    
         for x in [-2, 0, 2]:
             for y in [-2, 0, 2]:
                 for s, c in enumerate(color_names):
                     z = (-1)**s * 3
 
                     # Fill point array
-                    self.pts[idx, (idx+0) % 3] = x
-                    self.pts[idx, (idx+1) % 3] = y
-                    self.pts[idx, (idx+2) % 3] = z
+                    self.pts[ii, (ii+0) % 3] = x
+                    self.pts[ii, (ii+1) % 3] = y
+                    self.pts[ii, (ii+2) % 3] = z
                     self.cs.append(c)
 
-                    # Fill face array
-                    f, i_f, j_f = self.point_to_square_idx(self.pts[idx,:])
-                    self.squares[f, i_f, j_f] = color_dict[c]
+                    # Fill square array
+                    idx = self.point_to_square_idx(self.pts[ii,:])                    
+
+                    # Get piece type
+                    if idx in idx_center_pieces:
+                        piece_type = 'center'
+                    elif idx in idx_edge_pieces:
+                        piece_type = 'edge'
+                    elif idx in idx_corner_pieces:
+                        piece_type = 'corner'
+                    
+                    # Fill piece array
+                    self.pieces[ii] = Piece(c, piece_type, ii, np.copy(self.pts[ii,:]), idx)
+                    self.pieces_cube[idx] = self.pieces[ii]
                     
                     # Advance index
-                    idx += 1
-                    
+                    ii += 1
+        self._init_adjacency_()
+
+    # adjacent pieces need to know that they're adjacent, so we let them know:
+    def _init_adjacency_(self):
+        # The difference between any adjacent points lies in this list:
+        stencil = np.array([[ 1,  1,  0], [ 1, -1,  0], [-1,  1,  0], [-1, -1,  0],
+                            [ 0,  1,  1], [ 0,  1, -1], [ 0, -1,  1], [ 0, -1, -1],
+                            [ 1,  0,  1], [ 1,  0, -1], [ -1, 0,  1], [ -1, 0, -1]],                            
+                            dtype='int')
+
+        # We'll use this below since numpy arrays are fickle to compare to
+        pts_as_array_list = [list(x) for x in list(self.pts)]
+
+        for pc in self.pieces:
+            pt = pc.pt
+            
+            # any adjacent piece would have to be at one of these points:
+            candidate_adj_list = list(pt + stencil)
+            
+            # but any adjacent point has to be on the cube!
+            adj_pts = [p for p in candidate_adj_list if list(p) in pts_as_array_list]
+
+            # now identify their list indices and associated pieces            
+            adj_ii     = [pts_as_array_list.index(list(p)) for p in adj_pts]
+            adj_pieces = [self.pieces[ii] for ii in adj_ii]
+            pc.adj_pieces = adj_pieces
+
     def point_to_square_idx(self, pt):
         x,y,z = pt
         if   z ==  3:
@@ -76,7 +133,7 @@ class Cube:
             return face_dict['front'], int((2+x) / 2), int((2+z) / 2)
 
     def square_idx_to_point(self, idx):
-        f,i,j = idx        
+        f,i,j = idx
         if   face_dict[f] == 'up':
             return np.array([2*i-2,  2*j-2, 3], dtype='int')
         elif face_dict[f] == 'down':
@@ -93,13 +150,17 @@ class Cube:
     def face_of_idx(self, idx):
         return idx[0]
 
+    #def face_of_color(self, color_name):
+    #    face_p
+    
     def edge_of_idx(self, idx):
         pass
-        
-    def update_squares(self, idx_rot):
-        for idx in idx_rot:
-            f, i_f, j_f = self.point_to_square_idx(self.pts[idx, :])
-            self.squares[f, i_f, j_f] = color_dict[self.cs[idx]]
+       
+    def update_after_rotation(self, ii_rot):
+        for ii in ii_rot:
+            idx = self.point_to_square_idx(self.pts[ii, :])
+            self.pieces[ii].update_indices(self.pts[ii, :], idx)
+            self.pieces_cube[idx]  = self.pieces[ii]
 
     def rotate_face_to_face(self, f1, f2):
         # same faces, so nohting to do:
@@ -175,6 +236,7 @@ class Cube:
                     n_rot = -1
         
             # perform rotation
+            f = face_dict[f]
             if   abs(rot_ax[2]) == 1:
                 self.rotate_z(n_rot, edge=f)
             elif abs(rot_ax[0]) == 1:
@@ -203,138 +265,93 @@ class Cube:
         
     def rotate_x(self, n, edge = None):
         if edge in ['right', face_dict['right']]:
-            idx_rot, = np.where(self.pts[:, 0] >=  2)
+            ii_rot, = np.where(self.pts[:, 0] >=  2)
         elif edge in ['left', face_dict['left']]:
-            idx_rot, = np.where(self.pts[:, 0] <= -2)
+            ii_rot, = np.where(self.pts[:, 0] <= -2)
         else:
-            idx_rot = np.arange(0, 54)
+            ii_rot = np.arange(0, 54)
             
         theta = n * (np.pi / 2)
         M = np.array([[np.cos(theta), -np.sin(theta)],
                       [np.sin(theta),  np.cos(theta)]],
                      dtype='int')
-        fs_rot = np.dot(self.pts[idx_rot, 1:], M)
-        self.pts[idx_rot, 1:] = fs_rot
-        self.update_squares(idx_rot)
-
+        fs_rot = np.dot(self.pts[ii_rot, 1:], M)
+        self.pts[ii_rot, 1:] = fs_rot
+        self.update_after_rotation(ii_rot)
+ 
     
     def rotate_y(self, n, edge = None):
         if edge in ['front', face_dict['front']]:
-            idx_rot, = np.where(self.pts[:, 1] <= -2)
+            ii_rot, = np.where(self.pts[:, 1] <= -2)
         elif edge in ['back', face_dict['back']]:
-            idx_rot, = np.where(self.pts[:, 1] >= 2)
+            ii_rot, = np.where(self.pts[:, 1] >= 2)
         else:
-            idx_rot = np.arange(0, 54)
+            ii_rot = np.arange(0, 54)
             
         theta = n * (np.pi / 2)
         M = np.array([[np.cos(theta), -np.sin(theta)],
                       [np.sin(theta),  np.cos(theta)]],
                      dtype='int')
-        fs_rot = np.dot(self.pts[idx_rot, 0::2], M)
-        self.pts[idx_rot, 0::2] = fs_rot
-        self.update_squares(idx_rot)
+        fs_rot = np.dot(self.pts[ii_rot, 0::2], M)
+        self.pts[ii_rot, 0::2] = fs_rot
+        self.update_after_rotation(ii_rot)
     
     def rotate_z(self, n, edge=None):
         if edge in ['up', face_dict['up']]:
-            idx_rot, = np.where(self.pts[:, 2] >=  2)
+            ii_rot, = np.where(self.pts[:, 2] >=  2)
         elif edge in ['down', face_dict['down']]:
-            idx_rot, = np.where(self.pts[:, 2] <= -2)
+            ii_rot, = np.where(self.pts[:, 2] <= -2)
         else:
-            idx_rot = np.arange(0, 54)            
+            ii_rot = np.arange(0, 54)            
             
         theta = n * (np.pi / 2)
         M = np.array([[np.cos(theta), -np.sin(theta)],
                       [np.sin(theta),  np.cos(theta)]],
                      dtype='int')
-        fs_rot = np.dot(self.pts[idx_rot, 0:2], M)
-        self.pts[idx_rot, 0:2] = fs_rot
-        self.update_squares(idx_rot)
+        fs_rot = np.dot(self.pts[ii_rot, 0:2], M)
+        self.pts[ii_rot, 0:2] = fs_rot
+        self.update_after_rotation(ii_rot)
 
-    def center_piece_idx(self, c):
-        idx_list = [idx for idx in idx_center_pieces if color_dict[self.squares[idx]] == c]
+    def face_color(self, face):
+        face = face_dict[face]
+        return self.pieces_cube[face_dict['right'], 1, 1].color_name
+        
+    def center_piece_idx(self, color_name):
+        idx_list = [idx for idx in idx_center_pieces if self.pieces_cube[idx].color_name == color_name]
         return idx_list[0]        
         
     def edge_piece_idx(self, c):
-        return [idx for idx in idx_edge_pieces if color_dict[self.squares[idx]] == c]
+        return [idx for idx in idx_edge_pieces if self.pieces_cube[idx].color_name == color_name]
     
     def corner_piece_idx(self, c):
-        return [idx for idx in idx_corner_pieces if color_dict[self.squares[idx]] == c]
+        return [idx for idx in idx_corner_pieces if self.pieces_cube[idx].color_name == color_name]
+                    
+    def edge_piece_solved(self, pc):
+        if pc.piece_type != 'edge':
+            raise Exception("Bad input to edge_piece_solved... not an edge piece!")
+        adj_pc = pc.adj_pieces[0]
+        
+        idx = pc.idx
+        idx_ctr = (idx[0], 1, 1)
+        idx_adj = adj_pc.idx
+        idx_adj_ctr = (idx_adj[0], 1, 1)
 
+        color = pc.color_name
+        color_ctr = self.pieces_cube[idx_ctr].color_name
+        color_adj = adj_pc.color_name
+        color_adj_ctr = self.pieces_cube[idx_adj_ctr].color_name
+        
+        return color == color_ctr and color_adj == color_adj_ctr
     
-    def edge_piece_adj_idx(self, idx):
-        f, i_f, j_f = idx
-
-        if face_dict[f] == 'up':
-            if   i_f == 1 and j_f == 0:
-                return (face_dict['front'],  1, 2)
-            elif i_f == 1 and j_f == 2:
-                return (face_dict['back'], 1, 2)                
-            elif i_f == 0 and j_f == 1:
-                return (face_dict['left'],  1, 2)
-            elif i_f == 2 and j_f == 1:
-                return (face_dict['right'], 1, 2)
-            
-        elif face_dict[f] == 'down':
-            if   i_f == 1 and j_f == 0:
-                return (face_dict['back'], 1, 0)
-            elif i_f == 1 and j_f == 2:
-                return (face_dict['front'],  1, 0)                
-            elif i_f == 0 and j_f == 1:
-                return (face_dict['left'],  1, 0)
-            elif i_f == 2 and j_f == 1:
-                return (face_dict['right'], 1, 0)             
-
-        elif face_dict[f] == 'left':
-            if   i_f == 1 and j_f == 0:
-                return (face_dict['down'], 0, 1)
-            elif i_f == 1 and j_f == 2:
-                return (face_dict['up'],  0, 1)                
-            elif i_f == 0 and j_f == 1:
-                return (face_dict['back'],  2, 1)
-            elif i_f == 2 and j_f == 1:
-                return (face_dict['front'], 0, 1)             
-
-        elif face_dict[f] == 'right':
-            if   i_f == 1 and j_f == 0:
-                return (face_dict['down'], 2, 1)
-            elif i_f == 1 and j_f == 2:
-                return (face_dict['up'],  2, 1)                
-            elif i_f == 0 and j_f == 1:
-                return (face_dict['front'], 2, 1)
-            elif i_f == 2 and j_f == 1:
-                return (face_dict['back'], 0, 1)
-
-        elif face_dict[f] == 'front':
-            if   i_f == 1 and j_f == 0:
-                return (face_dict['down'], 1, 2)
-            elif i_f == 1 and j_f == 2:
-                return (face_dict['up'],  1, 0)                
-            elif i_f == 0 and j_f == 1:
-                return (face_dict['left'],  2, 1)
-            elif i_f == 2 and j_f == 1:
-                return (face_dict['right'], 0, 1)
-            
-        elif face_dict[f] == 'back':
-            if i_f == 0 and j_f == 1:
-                return (face_dict['right'],  2, 1)
-            elif i_f == 2 and j_f == 1:
-                return (face_dict['left'], 0, 1)            
-            elif i_f == 1 and j_f == 0:
-                return (face_dict['down'], 1, 0)
-            elif i_f == 1 and j_f == 2:
-                return (face_dict['up'],  1, 2)                
-            
-    def edge_piece_solved(self, idx):
-        ctr_pc = (idx[0], 1, 1)
-        
-        idx_adj = self.edge_piece_adj_idx(idx)
-        ctr_pc_adj = (idx_adj[0], 1, 1)
-        
-        return self.squares[idx] == self.squares[ctr_pc] and self.squares[idx_adj] == self.squares[ctr_pc_adj]
-
     def edge_pieces_matching_color(self, c):
-        return [ep for ep in idx_edge_pieces if color_dict[self.squares[ep]] == c or self.squares[ep] == c]
+        return [pc for pc in self.pieces if
+                pc.idx in idx_edge_pieces and (pc.color_name == c or pc.color_name == color_dict[c])]
 
+    def face_piece_matching_color(self, c):
+        return [pc for pc in self.pieces if
+                pc.idx in idx_edge_pieces and (pc.color_name == c or pc.color_name == color_dict[c])][0]
+
+        
     def cloud_plot(self, ax=None):
         if ax is None:
             fig = plt.figure(figsize=(8,8))
@@ -395,7 +412,7 @@ class Cube:
                 j_f = int(s / 3)
                 x = i_f
                 y = j_f
-                c = color_dict[self.squares[f, i_f, j_f]]
+                c = self.pieces_cube[f, i_f, j_f].color_name,
                 ax.add_patch(Rectangle((x, y), width = 1, height = 1,
                                        facecolor = c, linewidth=2,
                                        edgecolor='k'))
@@ -410,13 +427,34 @@ class Cube:
     
 if __name__ == "__main__":
     c = Cube()
+
+    idx = idx_edge_pieces[0]
+    print(c.piece_cube[idx].color_name,
+          c.piece_cube[idx].ii,
+          c.piece_cube[idx].piece_type,
+          c.piece_cube[idx].idx,
+          c.piece_cube[idx].face_name,
+          c.piece_cube[idx].pt)
+    # ii = c.piece_cube[idx].ii
+    
     # c.cube_plot()
-    # c.rotate_face_to_face('back', 'up')
+    #c.cube_plot()
+    #c.square_plot()
+    #c.rotate_face_to_face('back', 'up')
     # # # c.cube_plot()
-    # c.rotate_face_to_face('up', 'back')    
-    # # c.rotate_y(1)
+    #c.rotate_face_to_face('up', 'back')    
+    # c.rotate_y(1)
     # c.cube_plot()
 
-    # c.square_plot()
-    # plt.show()
+    #    idx = c.pieces[ii].idx
+    
+    # print(c.piece_cube[idx].color_name,
+    #       c.piece_cube[idx].ii,          
+    #       c.piece_cube[idx].piece_type,
+    #       c.piece_cube[idx].idx,
+    #       c.piece_cube[idx].pt)
+    
+    #c.cube_plot()
+    #c.square_plot()
+    #plt.show()
     pass
