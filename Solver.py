@@ -11,7 +11,7 @@ class Solver:
         f = face_dict[c.center_piece_idx('white')[0]]
         self.c.rotate_face_to_face(f, 'up')
 
-    def s1_remove_ep_from_right_edge(self, edge_to_switch):
+    def remove_ep_from_right_edge(self, edge_to_switch):
         self.c.rotate_face_edge_to_edge('right', edge_to_switch, 'down')
         self.c.rotate_down(1)
         self.c.rotate_face_edge_to_edge('right', 'down', edge_to_switch)
@@ -19,7 +19,6 @@ class Solver:
     def solve_white_cross(self):
         # Ensure white cross on top
         self.white_face_to_top()
-        self.c.cube_plot()
 
         for ep_to_solve in self.c.edge_pieces_matching_color('white'):
             adj_ep_to_solve = ep_to_solve.adj_pieces[0]
@@ -38,7 +37,7 @@ class Solver:
                         
                     # Target color is on another side, so move piece to correct side and flip to right
                     else:
-                        self.s1_remove_ep_from_right_edge(adj_ep_to_solve.face_name)
+                        self.remove_ep_from_right_edge(adj_ep_to_solve.face_name)
                         self.c.rotate_face_edge_to_edge('down', 'front', target_face_piece.face_name)
                         self.c.rotate_face_to_face(target_face_piece.face_name, 'right')
                         self.c.rotate_face_edge_to_edge('right', 'down', 'front')
@@ -69,6 +68,7 @@ if __name__ == '__main__':
     c.rotate_right(1)
     c.rotate_front(1)
     c.rotate_down(1)
+    c.rotate_x(1)
     
     
     # # Sample test config:
@@ -86,6 +86,7 @@ if __name__ == '__main__':
     
     s = Solver(c)
 
+    c.cube_plot()
     s.solve_white_cross()
     c.cube_plot()
     plt.show()
