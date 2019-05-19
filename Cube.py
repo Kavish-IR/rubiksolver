@@ -53,6 +53,11 @@ class Piece:
         self.idx = idx
         self.face = idx[0]
         self.face_name = face_dict[self.face]
+
+    def edge(self):
+        if self.piece_type != 'edge':
+            raise Exception("Not an edge piece!")        
+        return set([self.face_name, self.adj_pieces[0].face_name])
         
     def corner(self):
         if self.piece_type != 'corner':
@@ -515,6 +520,13 @@ if __name__ == "__main__":
     #       c.piece_cube[idx].piece_type,
     #       c.piece_cube[idx].idx,
     #       c.piece_cube[idx].pt)
+
+
+    idx = c.point_to_idx(np.array([3, 0, 2], dtype=int))
+    ep  = c.pieces_cube[idx]
+    print()
+    print(ep.pt, ep.color_name, ep.edge())
+                           
     
     c.cube_plot()
     #c.square_plot()
