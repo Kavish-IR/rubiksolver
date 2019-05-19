@@ -179,6 +179,14 @@ class Cube:
 
     def corner_pieces(self, corner):
         return [cp for cp in self.pieces if cp.piece_type == 'corner' and cp.corner() == corner]
+
+    def idx_to_corner(self, idx):
+        if self.pieces_cube[idx].piece_type == 'corner':
+            return self.pieces_cube[idx].corner()           
+
+    def pt_to_corner(self, pt):
+        idx = self.point_to_idx(pt)
+        return self.idx_to_corner(idx)
     
     def update_after_rotation(self, ii_rot):
         for ii in ii_rot:
