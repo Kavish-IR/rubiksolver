@@ -83,7 +83,6 @@ class Solver:
 
             # piece is unsolved but in some other up corner. move it to front,down,right position
             elif 'up' in piece_to_solve.corner():
-                print('case: on up in non-target corner')
                 tmp = list(piece_to_solve.corner())
                 tmp.remove('up')
                 if tmp[0] != 'right':                    
@@ -128,7 +127,7 @@ class Solver:
                 self.c.rotate_down(-1)
                 self.c.rotate_right(1)
             
-            self.c.cube_plot(title_str="{0} post to solve".format(i))
+            self.c.cube_plot(title_str="{0} post solve".format(i))
             
             # rotate the cube for the next edge to solve
             self.c.rotate_z(1)
