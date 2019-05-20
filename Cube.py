@@ -74,6 +74,9 @@ class Piece:
         if self.piece_type != 'corner':
             raise Exception("Not a corner piece!")        
         return set([self.face_name, self.adj_pieces[0].face_name, self.adj_pieces[1].face_name])
+
+    def adjacent_color_names(self):
+        return set([p.color_name for p in self.adj_pieces])
             
 class Cube:
     pts = np.zeros((54, 3), dtype='int')
@@ -236,7 +239,7 @@ class Cube:
 
 
     def rotate_face_edge_to_edge(self, f, e1, e2):
-        # same faces, so nohting to do:
+        # same faces, so nothing to do:
         if e1 == e2:
             pass
 
@@ -249,93 +252,79 @@ class Cube:
             # Zero rot_ax implies n1 and n2 are opposite faces
             # and means we need to determine the rotation axis
             if int(np.linalg.norm(rot_ax)) == 0:
-
-                # If n1 is parallel to x or y, we rotate 180 about z
-                if abs(n1[0]) == 1 or abs(n1[1]) == 1:
-                    rot_ax = face_normals['up']
-                    n_rot  = 2
-
-                # If n1 is parallel to z, we rotate 180 about x
-                if abs(n1[2]) == 1:
-                    rot_ax = face_normals['right']
-                    n_rot  = 2
+                rot_ax = face_normals[f]
+                n_rot  = 2
 
             # they're distinct faces, and we just need a single rotation
             else:
-                if min(rot_ax) < 0:
-                    n_rot = 1
-                else:
-                    n_rot = -1
-        
-            # perform rotation
-            f = face_dict[f]
-            if   abs(rot_ax[2]) == 1:
-                self.rotate_z(n_rot, edge=f)
-            elif abs(rot_ax[0]) == 1:
-                self.rotate_x(n_rot, edge=f)
-            elif abs(rot_ax[1]) == 1:
-                self.rotate_y(-n_rot, edge=f)
-
-                
-    def rotate_cube_corner_to_corner(self, c1, c2):
-        # we will keep track of where c1 goes using one of its pieces
-        c1_pieces = self.corner_pieces(c1)
-        #c2_pieces = self.corner_pieces(c2)
-
-        # we may mutate these below
-        c1 = list(c1)
-        c2 = list(c2)
-        
-        if c1 == c2:
-            pass
-        else:
-            # list of common faces
-            f_common = list(set(c1).intersection(set(c2)))
-
-            # if any faces are in common, use the first
-            if f_common:
-                f_common = f_common[0]
-
-            # no faces in common, so every face of c1 is opposite c2
-            # so we'll rotate the cube to flip the first face of c2 with its opposite
-            # (which corresponds to one of c1's faces
-            else:
-                f_common = c2[0]
-                c.rotate_cube_face_to_face(opposite_face[f_common], f_common)
-                c1 = list(c1_pieces[0].corner())
-
-            # Now we have c1 and c2 on the face f_common, we'll use the same
-            # steps as the face corner-to-corner algorithm from here. 
-            c1.remove(f_common)
-            c2.remove(f_common)
-            
-            v1 = face_normals[c1[0]] + face_normals[c1[1]]
-            v2 = face_normals[c2[0]] + face_normals[c2[1]]
-            rot_ax = np.cross(v1, v2)
-
-            # v1 and v2 are not parallel, so it's a +/- 90* turn
-            if np.linalg.norm(rot_ax) > 0:
                 rot_ax = rot_ax / np.linalg.norm(rot_ax)
-                rot_ax = rot_ax.astype(int)
-                if max(rot_ax) > 0:
-                    n_rot  = -1
-                else:
-                    n_rot = 1
-                    
-            # v1 and v2 are parallel, so it's a 180* turn
-            else:
-                n_rot = 2
-                rot_ax = face_normals[f_common]
-            
-            # perform rotation
-            if   abs(rot_ax[2]) == 1:
-                self.rotate_z(n_rot)
-            elif abs(rot_ax[0]) == 1:
-                self.rotate_x(n_rot)
-            elif abs(rot_ax[1]) == 1:
-                self.rotate_y(-n_rot)
+                rot_ax = rot_ax.astype(int)                
+                n_rot = -np.dot(rot_ax.flatten(), face_normals[f])
+
+            self.rotate_face(f, n_rot)
 
                 
+    # def rotate_cube_corner_to_corner(self, c1, c2):
+    #     # we will keep track of where c1 goes using one of its pieces
+    #     c1_pieces = self.corner_pieces(c1)
+      
+    #     # we may mutate these below
+    #     c1 = list(c1)
+    #     c2 = list(c2)
+    #     c1.sort()
+    #     c2.sort()
+    #     c1_pieces = [p for p,_ in sorted(zip(c1_pieces, c1), key = lambda pair:pair[1])]
+        
+    #     if c1 == c2:
+    #         pass
+    #     else:
+    #         # list of common faces
+    #         f_common = list(set(c1).intersection(set(c2)))
+    #         f_common.sort()
+
+    #         # if any faces are in common, use the first
+    #         if f_common:
+    #             f_common = f_common[0]
+
+    #         # no faces in common, so every face of c1 is opposite c2
+    #         # so we'll rotate the cube to flip the first face of c2 with its opposite
+    #         # (which corresponds to one of c1's faces
+    #         else:
+    #             f_common = c2[0]
+    #             self.rotate_cube_face_to_face(opposite_face[f_common], f_common)
+    #             c1 = list(c1_pieces[0].corner())
+    #             c1.sort()
+
+    #         # # Now we have c1 and c2 on the face f_common, we'll use the same
+    #         # # steps as the face corner-to-corner algorithm from here. 
+    #         # c1.remove(f_common)
+    #         # c2.remove(f_common)
+            
+    #         # v1 = face_normals[c1[0]] + face_normals[c1[1]]
+    #         # v2 = face_normals[c2[0]] + face_normals[c2[1]]
+    #         # rot_ax = np.cross(v1, v2)
+
+    #         # # v1 and v2 are not parallel, so it's a +/- 90* turn
+    #         # if np.linalg.norm(rot_ax) > 0:
+    #         #     rot_ax = rot_ax / np.linalg.norm(rot_ax)
+    #         #     rot_ax = rot_ax.astype(int)
+    #         #     if max(rot_ax) > 0:
+    #         #         n_rot  = 1
+    #         #     else:
+    #         #         n_rot = -1
+                    
+    #         # # v1 and v2 are parallel, so it's a 180* turn
+    #         # else:
+    #         #     n_rot = 2
+    #         #     rot_ax = face_normals[f_common]
+            
+    #         # # perform rotation
+    #         # if   abs(rot_ax[2]) == 1:
+    #         #     self.rotate_z(n_rot)
+    #         # elif abs(rot_ax[0]) == 1:
+    #         #     self.rotate_x(n_rot)
+    #         # elif abs(rot_ax[1]) == 1:
+    #         #     self.rotate_y(-n_rot)
 
     def rotate_face_corner_to_corner(self, f, c1, c2):
         c1 = list(c1)
@@ -359,9 +348,9 @@ class Cube:
                 rot_ax = rot_ax / np.linalg.norm(rot_ax)
                 rot_ax = rot_ax.astype(int)
                 if max(rot_ax) > 0:
-                    n_rot  = -1
+                    n_rot  = 1
                 else:
-                    n_rot = 1
+                    n_rot =  -1
                     
             # v1 and v2 are parallel, so it's a 180* turn
             else:
@@ -376,7 +365,26 @@ class Cube:
                 self.rotate_x(n_rot, edge=f)
             elif abs(rot_ax[1]) == 1:
                 self.rotate_y(-n_rot, edge=f)
+
+    def rotate_face(self, face_name, n):
+        if face_name == 'up':
+            self.rotate_up(n)
             
+        if face_name == 'down':
+            self.rotate_down(n)
+            
+        if face_name == 'left':
+            self.rotate_left(n)
+            
+        if face_name == 'right':
+            self.rotate_right(n)
+            
+        if face_name == 'front':
+            self.rotate_front(n)
+            
+        if face_name == 'back':
+            self.rotate_back(n)
+    
     def rotate_up(self, n):
         self.rotate_z(n, 'up')
     
@@ -395,11 +403,12 @@ class Cube:
     def rotate_back(self, n):
         self.rotate_y(n, 'back')              
         
-    def rotate_x(self, n, edge = None):
+    def rotate_x(self, n, edge = None):            
         if edge in ['right', face_dict['right']]:
             ii_rot, = np.where(self.pts[:, 0] >=  2)
         elif edge in ['left', face_dict['left']]:
             ii_rot, = np.where(self.pts[:, 0] <= -2)
+            n = -n
         else:
             ii_rot = np.arange(0, 54)
             
@@ -417,6 +426,7 @@ class Cube:
             ii_rot, = np.where(self.pts[:, 1] <= -2)
         elif edge in ['back', face_dict['back']]:
             ii_rot, = np.where(self.pts[:, 1] >= 2)
+            n = -n
         else:
             ii_rot = np.arange(0, 54)
             
@@ -433,6 +443,7 @@ class Cube:
             ii_rot, = np.where(self.pts[:, 2] >=  2)
         elif edge in ['down', face_dict['down']]:
             ii_rot, = np.where(self.pts[:, 2] <= -2)
+            n = -n
         else:
             ii_rot = np.arange(0, 54)            
             
