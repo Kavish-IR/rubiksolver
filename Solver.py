@@ -55,6 +55,9 @@ class Solver:
                     self.c.rotate_face_edge_to_edge('down', adj_ep_to_solve.face_name, target_face_piece.face_name)
                     self.c.rotate_cube_face_to_face(target_face_piece.face_name, 'right')
                     self.c.rotate_right(2)
+
+                if not self.c.edge_piece_solved(ep_to_solve):
+                    self.c.cube_plot('Something went wrong with the current edge piece.')
             
             
     def solve_white_corners(self):        
@@ -83,13 +86,12 @@ class Solver:
 
             # piece is unsolved but in some other up corner. move it to front,down,right position
             elif 'up' in piece_to_solve.corner():
-                tmp = list(piece_to_solve.corner())
+                tmp = sorted(list(piece_to_solve.corner()))
                 tmp.remove('up')
-                if tmp[0] != 'right':                    
+                if tmp[0] != 'right':
                     face_to_rotate = tmp[0]
                 else:
                     face_to_rotate = tmp[1]
-
                 corner_start = piece_to_solve.corner()
                 corner_end   = tmp
                 corner_end.append('down')
@@ -100,8 +102,8 @@ class Solver:
                 self.c.rotate_face_corner_to_corner(face_to_rotate, corner_end, corner_start)
 
             # piece is on down edge. move to front,right,down position
-            elif 'down' in piece_to_solve.corner():
-                self.c.rotate_face_corner_to_corner('down', piece_to_solve.corner(), set(['front', 'right', 'down'])) 
+            if 'down' in piece_to_solve.corner():
+                self.c.rotate_face_corner_to_corner('down', piece_to_solve.corner(), set(['front', 'right', 'down']))
 
             #self.c.cube_plot(title_str="{0} prior to solve".format(i))
             # case that white is on front:
@@ -126,27 +128,89 @@ class Solver:
                 self.c.rotate_right(-1)
                 self.c.rotate_down(-1)
                 self.c.rotate_right(1)
-            
-            self.c.cube_plot(title_str="{0} post solve".format(i))
-            
+
+            if not self.c.corner_piece_solved(piece_to_solve):                
+                self.c.cube_plot(title_str = 'Something went wrong with the current corner piece.  {0}'.format(i))
+                
+            #self.c.cube_plot(title_str="{0} post solve".format(i))            
             # rotate the cube for the next edge to solve
             self.c.rotate_z(1)
+
+    def remove_middle_edge_piece(self, e):
+        self.c.rotate_cube_face_to_face(e, 'front')
+        self.c.rotate_up(1)
+        self.c.rotate_right(1)
+        self.c.rotate_up(-1)
+        self.c.rotate_right(-1)
+        self.c.rotate_up(-1)
+        self.c.rotate_front(-1)
+        self.c.rotate_up(1)
+        self.c.rotate_front(1)
+        self.c.rotate_cube_face_to_face('front', e)        
+            
+    def solve_middle_edges(self):
+        self.c.rotate_x(2)
+
+        # We will solve corners one-by-one clock-wise
+        for i in range(4):
+            colors_to_solve = [self.c.face_color('front'), self.c.face_color('right')]
+            ep_to_solve = self.c.edge_piece_matching_colors(colors_to_solve[0], colors_to_solve[1])
+
+            if 'up' not in ep_to_solve.edge():
+                if ep_to_solve.edge() == set(['right', 'back']):
+                    self.remove_middle_edge_piece('right')
+                elif ep_to_solve.edge() == set(['left', 'back']):
+                    self.remove_middle_edge_piece('back')
+                elif ep_to_solve.edge() == set(['left', 'front']):
+                    self.remove_middle_edge_piece('left')
+                elif ep_to_solve.edge() == set(['front', 'right']):
+                    self.remove_middle_edge_piece('front')
                     
+            if ep_to_solve.face_name == 'up':
+                ep_to_solve = ep_to_solve.adj_pieces[0]
+            starting_edge = ep_to_solve.face_name
+
+            if ep_to_solve.color_name == self.c.face_color('front'):
+                self.c.rotate_face_edge_to_edge('up', starting_edge, 'front')
+                self.c.rotate_up(1)
+                self.c.rotate_right(1)
+                self.c.rotate_up(-1)
+                self.c.rotate_right(-1)
+                self.c.rotate_up(-1)
+                self.c.rotate_front(-1)
+                self.c.rotate_up(1)
+                self.c.rotate_front(1)
+                
+            elif ep_to_solve.color_name == self.c.face_color('right'):
+                self.c.rotate_face_edge_to_edge('up', starting_edge, 'right')
+                self.c.rotate_cube_face_to_face('right', 'front')
+                self.c.rotate_up(-1)
+                self.c.rotate_left(-1)
+                self.c.rotate_up(1)
+                self.c.rotate_left(1)
+                self.c.rotate_up(1)
+                self.c.rotate_front(1)
+                self.c.rotate_up(-1)
+                self.c.rotate_front(-1)
+                self.c.rotate_cube_face_to_face('front', 'right')
+                
+            self.c.rotate_cube_face_to_face('right', 'front')
+    
 if __name__ == '__main__':
     c = Cube()
 
-    # ## Sample test config 2:
-    # c.rotate_right(2)
-    # c.rotate_left(2)
-    # c.rotate_down(1)
-    # c.rotate_right(2)
-    # c.rotate_up(1)
-    # c.rotate_right(1)
-    # c.rotate_front(1)
-    # c.rotate_down(1)
-    # c.rotate_x(1)
-    # c.rotate_up(2)
-    # c.rotate_right(2)
+    ## Sample test config 2:
+    c.rotate_right(2)
+    c.rotate_left(2)
+    c.rotate_down(1)
+    c.rotate_right(2)
+    c.rotate_up(1)
+    c.rotate_right(1)
+    c.rotate_front(1)
+    c.rotate_down(1)
+    c.rotate_x(1)
+    c.rotate_up(2)
+    c.rotate_right(2)
     
     
     #Sample test config:
@@ -158,14 +222,17 @@ if __name__ == '__main__':
     c.rotate_right(3)
     c.rotate_up(1)
     c.rotate_back(1)
-    c.rotate_down(1)
+    #c.rotate_down(1)
     c.rotate_left(1)
 
-    
     s = Solver(c)
 
     c.cube_plot()
     s.solve_white_cross()
-    c.cube_plot()
+    c.cube_plot(title_str = 'after white cross')
     s.solve_white_corners()
+    c.cube_plot(title_str = 'after white corners')
+    s.solve_middle_edges()
+    c.cube_plot(title_str = 'after middle edges')
+    c.cube_plot()
     plt.show()
