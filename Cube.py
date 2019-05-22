@@ -333,39 +333,29 @@ class Cube:
 
         # faces to switch:
         else :
-            c1 = sorted(list(c1))
-            c2 = sorted(list(c2))
+            c1 = list(c1)
+            c2 = list(c2)
             
             c1.remove(f)
             c2.remove(f)
             
             v1 = face_normals[c1[0]] + face_normals[c1[1]]
             v2 = face_normals[c2[0]] + face_normals[c2[1]]
-            rot_ax = np.cross(v1, v2)
+            v1_cross_v2 = np.cross(v1, v2)
 
-            # v1 and v2 are not parallel, so it's a +/- 90* turn
-            if np.linalg.norm(rot_ax) > 0:
-                rot_ax = rot_ax / np.linalg.norm(rot_ax)
-                rot_ax = rot_ax.astype(int)
-                if max(rot_ax) > 0:
-                    n_rot  = 1
+            # v1 and v2 are not parallel, so it's a +/- 90* turn of f
+            if np.linalg.norm(v1_cross_v2) > 0:
+                if np.dot(v1_cross_v2, face_normals[f]) > 0:
+                    n_rot  = -1
                 else:
-                    n_rot =  -1
+                    n_rot =   1
                     
-            # v1 and v2 are parallel, so it's a 180* turn
+            # v1 and v2 are parallel, so it's a 180* turn of f
             else:
                 n_rot = 2
-                rot_ax = face_normals[f]
-            
-            # perform rotation
-            f = face_dict[f]
-            if   abs(rot_ax[2]) == 1:
-                self.rotate_z(n_rot, edge=f)
-            elif abs(rot_ax[0]) == 1:
-                self.rotate_x(n_rot, edge=f)
-            elif abs(rot_ax[1]) == 1:
-                self.rotate_y(-n_rot, edge=f)
 
+            self.rotate_face(f, n_rot)
+                            
 
     def rotate_face(self, face_name, n):
         if face_name == 'up':
