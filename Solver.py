@@ -15,7 +15,6 @@ class Solver:
         self.c.rotate_face_edge_to_edge('right', edge_to_switch, 'down')
         self.c.rotate_down(-1)
         self.c.rotate_face_edge_to_edge('right', 'down', edge_to_switch)
-
         
     def solve_white_cross(self):
         # Ensure white cross on top
@@ -196,6 +195,63 @@ class Solver:
                 
             self.c.rotate_cube_face_to_face('right', 'front')
     
+    def solve_yellow_cross(self):
+        yellow_edge_pieces = self.c.edge_pieces_matching_color('yellow')
+
+        while len([ep for ep in yellow_edge_pieces if ep.face_name == 'up']) < 4:
+            yellow_cross_pieces = [ep for ep in yellow_edge_pieces if ep.face_name == 'up']
+            n_yellow_cross_in_place = len(yellow_cross_pieces)
+
+            # None placed, state 2 from manual
+            if n_yellow_cross_in_place == 0:
+                # solve cross w/ State 2 method
+                self.c.rotate_front(1)
+                self.c.rotate_up(1)
+                self.c.rotate_right(1)
+                self.c.rotate_up(-1)
+                self.c.rotate_right(-1)
+                self.c.rotate_front(-1)
+
+            else:                
+                ep_adj1 = yellow_cross_pieces[0].adj_pieces[0]
+                ep_adj2 = yellow_cross_pieces[1].adj_pieces[0]
+                
+                n1 = face_normals[ep_adj1.face_name]
+                n2 = face_normals[ep_adj2.face_name]
+                orientation = np.dot(np.cross(n1, n2), np.array([0,0,1], dtype='int'))
+                
+                # Two up yellow edge pieces are in a line, state 4 from manual, after rotation
+                if orientation == 0:
+                    # Line is perpendicular to front in this case. Needs to be parallel for State 4.
+                    if ep_adj1.face_name in ['front', 'back']:
+                        self.c.rotate_face_edge_to_edge('up', 'front', 'right')
+
+                    # solve cross w/ State 4 method
+                    self.c.rotate_front(1)
+                    self.c.rotate_right(1)
+                    self.c.rotate_up(1)
+                    self.c.rotate_right(-1)
+                    self.c.rotate_up(-1)
+                    self.c.rotate_front(-1)
+
+                # Two up yellow edge pieces are not in a line, state 3 from manual, after rotation.
+                else:
+                    # If n1,n2 is ccw oriented, then we can rotate ep_adj1's face to back to get state 3
+                    if orientation > 0:
+                        self.c.rotate_face_edge_to_edge('up', ep_adj1.face_name, 'back')
+                    # Otherwise, we should rotate ep_adj2's face to back to get state 3.
+                    if orientation < 0:
+                        self.c.rotate_face_edge_to_edge('up', ep_adj2.face_name, 'back')
+
+                    # solve cross w/  State 3 method
+                    self.c.rotate_front(1)
+                    self.c.rotate_up(1)
+                    self.c.rotate_right(1)
+                    self.c.rotate_up(-1)
+                    self.c.rotate_right(-1)
+                    self.c.rotate_front(-1)
+        
+    
 if __name__ == '__main__':
     c = Cube()
 
@@ -234,5 +290,6 @@ if __name__ == '__main__':
     c.cube_plot(title_str = 'after white corners')
     s.solve_middle_edges()
     c.cube_plot(title_str = 'after middle edges')
-    c.cube_plot()
+    s.solve_yellow_cross()    
+    c.cube_plot(title_str = 'after yellow cross')
     plt.show()
