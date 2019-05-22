@@ -74,7 +74,7 @@ class Piece:
         if self.piece_type != 'corner':
             raise Exception("Not a corner piece!")        
         return set([self.face_name, self.adj_pieces[0].face_name, self.adj_pieces[1].face_name])
-
+            
     def adjacent_color_names(self):
         return set([p.color_name for p in self.adj_pieces])
             
@@ -327,15 +327,15 @@ class Cube:
     #         #     self.rotate_y(-n_rot)
 
     def rotate_face_corner_to_corner(self, f, c1, c2):
-        c1 = list(c1)
-        c2 = list(c2)
-        
         # same faces, so nothing to do:
         if c1 == c2:
             pass
 
         # faces to switch:
         else :
+            c1 = sorted(list(c1))
+            c2 = sorted(list(c2))
+            
             c1.remove(f)
             c2.remove(f)
             
@@ -365,6 +365,7 @@ class Cube:
                 self.rotate_x(n_rot, edge=f)
             elif abs(rot_ax[1]) == 1:
                 self.rotate_y(-n_rot, edge=f)
+
 
     def rotate_face(self, face_name, n):
         if face_name == 'up':
@@ -515,6 +516,10 @@ class Cube:
     def edge_pieces_matching_color(self, c):
         return [pc for pc in self.pieces if
                 pc.idx in idx_edge_pieces and (pc.color_name == c or pc.color_name == color_dict[c])]
+
+    def edge_piece_matching_colors(self, c1, c2):
+        return [ep for ep in self.edge_pieces_matching_color(c1) if ep.adjacent_color_names() == set([c2])][0]
+        
 
     def center_piece_matching_color(self, c):
         return [pc for pc in self.pieces if
