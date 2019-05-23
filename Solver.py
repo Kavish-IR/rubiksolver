@@ -250,7 +250,65 @@ class Solver:
                     self.c.rotate_up(-1)
                     self.c.rotate_right(-1)
                     self.c.rotate_front(-1)
-        
+
+    def non_up_yellow_corner_orientation(self, cp):
+        n1 = face_normals[cp.face_name]
+        n2 = [face_normals[cp_adj.face_name] for cp_adj in cp.adj_pieces if cp_adj.face_name != 'up'][0]
+        orientation = np.dot( np.cross(n1, n2), face_normals['up'])
+        return orientation
+              
+    def solve_yellow_corners(self):
+        while len([ep for ep in self.c.corner_pieces_matching_color('yellow') if ep.face_name == 'up']) < 4:
+            yellow_corner_pieces = self.c.corner_pieces_matching_color('yellow')            
+            up_yellow_corner_pieces = [cp for cp in yellow_corner_pieces if cp.face_name == 'up']
+            n_up_yellow_corners = len(up_yellow_corner_pieces)
+
+            other_yellow_corner_pieces = [cp for cp in yellow_corner_pieces if cp not in up_yellow_corner_pieces]
+            other_yellow_corner_orientations = [self.non_up_yellow_corner_orientation(cp) for cp in
+                                                other_yellow_corner_pieces]
+            
+            # State 1. We need to have a yellow piece on the up left edge. Find a corner piece
+            # on the up edge that we can rotate to put yellow on the left face. Do the rotation.
+
+            if n_up_yellow_corners == 0:
+                cp_to_rotate =  [cp for cp, orientation in
+                                 list(zip(other_yellow_corner_pieces, other_yellow_corner_orientations))
+                                 if orientation > 0][0]
+                self.c.rotate_face_edge_to_edge('up', cp_to_rotate.face_name, 'left')
+
+            # State 2. We have exactly 1 yellow piece with its face on the up face. It needs to be
+            # in the up,left,front position. Do the rotation.
+            if n_up_yellow_corners == 1:
+                cp_to_rotate = [cp for cp in up_yellow_corner_pieces][0]
+                adj_faces = set([cp.face_name for cp in cp_to_rotate.adj_pieces])
+
+                # Move desired piece to front,left,up position
+                if adj_faces == set(['left', 'back']):
+                    self.c.rotate_face_edge_to_edge('up', 'left', 'front')
+                elif adj_faces == set(['back', 'right']):
+                    self.c.rotate_face_edge_to_edge('up', 'back', 'front')
+                elif adj_faces == set(['front', 'right']):
+                    self.c.rotate_face_edge_to_edge('up', 'right', 'front')
+                else:
+                    pass
+            
+            # State 3. We need to have a yellow piece on the up front edge. Find a corner piece
+            # on the up edge that we can rotate to put yellow on the front face. Do the rotaiton.
+            if n_up_yellow_corners >= 2:
+                cp_to_rotate =  [cp for cp, orientation in
+                                 list(zip(other_yellow_corner_pieces, other_yellow_corner_orientations))
+                                 if orientation < 0][0]
+                self.c.rotate_face_edge_to_edge('up', cp_to_rotate.face_name, 'front')
+
+            # In position. Apply Stage 6 algorithm.
+            self.c.rotate_right(1)
+            self.c.rotate_up(1)
+            self.c.rotate_right(-1)
+            self.c.rotate_up(1)
+            self.c.rotate_right(1)
+            self.c.rotate_up(2)
+            self.c.rotate_right(-1)
+            
     
 if __name__ == '__main__':
     c = Cube()
@@ -273,12 +331,12 @@ if __name__ == '__main__':
     c.rotate_x(1)
     c.rotate_up(-2)
     c.rotate_left(1)
-    c.rotate_front(1)
+    #c.rotate_front(1)
     c.rotate_down(1)
-    c.rotate_right(3)
+    #c.rotate_right(3)
     c.rotate_up(1)
     c.rotate_back(1)
-    #c.rotate_down(1)
+    c.rotate_down(1)
     c.rotate_left(1)
 
     s = Solver(c)
@@ -292,4 +350,6 @@ if __name__ == '__main__':
     c.cube_plot(title_str = 'after middle edges')
     s.solve_yellow_cross()    
     c.cube_plot(title_str = 'after yellow cross')
+    s.solve_yellow_corners()
+    c.cube_plot(title_str = 'after yellow corners')    
     plt.show()
