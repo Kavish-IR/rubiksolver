@@ -74,6 +74,9 @@ class Piece:
         if self.piece_type != 'corner':
             raise Exception("Not a corner piece!")        
         return set([self.face_name, self.adj_pieces[0].face_name, self.adj_pieces[1].face_name])
+
+    def adjacent_face_names(self):
+        return set([p.face_name for p in self.adj_pieces])
             
     def adjacent_color_names(self):
         return set([p.color_name for p in self.adj_pieces])
