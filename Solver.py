@@ -307,38 +307,75 @@ class Solver:
             self.c.rotate_up(1)
             self.c.rotate_right(1)
             self.c.rotate_up(2)
-            self.c.rotate_right(-1)
+            self.c.rotate_right(-1) 
+
+    def flip_front_corners(self):
+        self.c.rotate_right(-1)
+        self.c.rotate_front(1)
+        self.c.rotate_right(-1)
+        self.c.rotate_back(2)
+        self.c.rotate_right(1)
+        self.c.rotate_front(-1)
+        self.c.rotate_right(-1)
+        self.c.rotate_back(2)
+        self.c.rotate_right(2)
+        self.c.rotate_up(-1)
             
-    
+    def position_yellow_corners(self):
+        yellow_corner_pieces = self.c.corner_pieces_matching_color('yellow')
+        solved_yellow_corner_pieces = [cp for cp in yellow_corner_pieces if self.c.corner_piece_solved(cp)]
+
+        # After rotation, at least two corner pieces should be solved
+        while len(solved_yellow_corner_pieces) < 2:
+            self.c.rotate_up(1)
+            solved_yellow_corner_pieces = [cp for cp in yellow_corner_pieces if self.c.corner_piece_solved(cp)]
+
+        while len(solved_yellow_corner_pieces) <= 2:
+            
+            if len(solved_yellow_corner_pieces) == 1:
+                raise Exception("Only one of the up/yellow corners is solved. \n" +
+                                "The permutation to correct this is not yet implemented! \n" +
+                                "We shouldn't be reaching this state, so the solver cannot currently handle this."
+                )
+            
+            if len(solved_yellow_corner_pieces) == 2:
+                cp1, cp2 = solved_yellow_corner_pieces
+                common_solved_edge = list(cp1.adjacent_face_names().intersection(cp2.adjacent_face_names()))
+                
+                # If there's a common solved edge, rotate cube so it's on the back.
+                # Then flip the front corners to solve the cube.
+                if common_solved_edge:                
+                    common_solved_edge = common_solved_edge[0]
+                    self.c.rotate_cube_face_to_face(common_solved_edge, 'back')
+                    self.flip_front_corners()
+                    
+                # no common edge, so solved pieces are diagonal to one another
+                else:
+                    # If neither of the pieces is on the front/right/up position, rotate the cube once
+                    # to get the solved diagonal pieces to be on front/right/up and back/left/up
+                    if (cp1.adjacent_face_names()  != set(['front', 'right']) and
+                        cp2.adjacent_face_names() != set(['front', 'right']) ):
+                        self.c.rotate_cube_face_to_face('right', 'front')
+                        
+                    # We want to move the front/left/up piece to the back/right/up position to solve it
+                    # We will do this by
+                    #  1) flipping front corners (this moves it to front/right/up in the starting orientation)
+                    #  2) rotating the cube CW once
+                    #  3) flipping front corners (this moves it to front/right/back in the starting orientaion)
+                    #  4) rotating the cube CCW once (returns us to our original orientation
+                    self.flip_front_corners()
+                    self.c.rotate_cube_face_to_face('right', 'front')
+                    self.flip_front_corners()
+                    self.c.rotate_cube_face_to_face('front', 'right')
+                    
+            solved_yellow_corner_pieces = [cp for cp in yellow_corner_pieces if self.c.corner_piece_solved(cp)]
+
+            
+           
+            
 if __name__ == '__main__':
     c = Cube()
-
-    ## Sample test config 2:
-    c.rotate_right(2)
-    c.rotate_left(2)
-    c.rotate_down(1)
-    c.rotate_right(2)
-    c.rotate_up(1)
-    c.rotate_right(1)
-    c.rotate_front(1)
-    c.rotate_down(1)
-    c.rotate_x(1)
-    c.rotate_up(2)
-    c.rotate_right(2)
-    
-    
-    #Sample test config:
-    c.rotate_x(1)
-    c.rotate_up(-2)
-    c.rotate_left(1)
-    #c.rotate_front(1)
-    c.rotate_down(1)
-    #c.rotate_right(3)
-    c.rotate_up(1)
-    c.rotate_back(1)
-    c.rotate_down(1)
-    c.rotate_left(1)
-
+    c.randomize_state()
     s = Solver(c)
 
     c.cube_plot()
@@ -351,5 +388,7 @@ if __name__ == '__main__':
     s.solve_yellow_cross()    
     c.cube_plot(title_str = 'after yellow cross')
     s.solve_yellow_corners()
-    c.cube_plot(title_str = 'after yellow corners')    
+    c.cube_plot(title_str = 'after yellow corners')
+    s.position_yellow_corners()
+    c.cube_plot(title_str = 'after positioning yellow corners')    
     plt.show()
