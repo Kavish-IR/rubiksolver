@@ -370,7 +370,66 @@ class Solver:
                     
             solved_yellow_corner_pieces = [cp for cp in yellow_corner_pieces if self.c.corner_piece_solved(cp)]
 
+    def permute_up_edge_pieces(self, orientation):
+        if orientation == 'CW':
+            self.c.rotate_front(2)
+            self.c.rotate_up(1)
+            self.c.rotate_left(1)
+            self.c.rotate_right(-1)
+            self.c.rotate_front(2)
+            self.c.rotate_left(-1)
+            self.c.rotate_right(1)
+            self.c.rotate_up(1)
+            self.c.rotate_front(2)
+        elif orientation == 'CCW':
+            self.c.rotate_front(2)
+            self.c.rotate_up(-1)
+            self.c.rotate_left(1)
+            self.c.rotate_right(-1)
+            self.c.rotate_front(2)
+            self.c.rotate_left(-1)
+            self.c.rotate_right(1)
+            self.c.rotate_up(-1)
+            self.c.rotate_front(2)
             
+            
+    def solve_yellow_edges(self):
+        yellow_edge_pieces = self.c.edge_pieces_matching_color('yellow')
+        solved_yellow_edge_pieces = [ep for ep in yellow_edge_pieces if self.c.edge_piece_solved(ep)]
+        unsolved_yellow_edge_pieces = [ep for ep in yellow_edge_pieces if not self.c.edge_piece_solved(ep)]
+            
+        while len(solved_yellow_edge_pieces) == 0:
+            self.permute_up_edge_pieces('CW')
+            solved_yellow_edge_pieces = [ep for ep in yellow_edge_pieces if self.c.edge_piece_solved(ep)]
+            unsolved_yellow_edge_pieces = [ep for ep in yellow_edge_pieces if not self.c.edge_piece_solved(ep)]            
+            
+        if len(solved_yellow_edge_pieces) == 1:
+            # Identify the solved edge / face and rotate it to the back
+            solved_edge_piece = solved_yellow_edge_pieces[0]
+            solved_face_name  = list(solved_edge_piece.adjacent_face_names())[0]
+            self.c.rotate_cube_face_to_face(solved_face_name, 'back')
+
+            # List out all of the adjacent piece's unsolved face names and their colors, along with the opposite
+            # faces and their colors
+            unsolved_face_names           = [list(ep.adjacent_face_names())[0] for ep in unsolved_yellow_edge_pieces]
+            unsolved_edge_colors          = [cp.adj_pieces[0].color_name for cp in unsolved_yellow_edge_pieces]            
+            unsolved_opposite_face_names  = [opposite_face[f] for f in unsolved_face_names]
+            unsolved_opposite_face_colors = [self.c.face_color(f) for f in unsolved_opposite_face_names]
+
+            # One of the unsovled pieces is opposite to the face it needs to go to. Identify this piece's
+            # index in the unsolved edge list
+            idx = [i for i, pair in enumerate(zip(unsolved_edge_colors, unsolved_opposite_face_colors)) if pair[0] == pair[1]]
+            idx = idx[0]
+
+            # If the unsolved adjacent piece is on the right side, we need to perform a CCW permutation
+            # to move it to the left side and solve the cube
+            if unsolved_face_names[idx] == 'right':
+                self.permute_up_edge_pieces('CCW')
+
+            # If the unsolved adjacent piece is on the left side, we need to perform a CW permutation
+            # to move it to the right side and solve the cube
+            elif unsolved_face_names[idx] == 'left':
+                self.permute_up_edge_pieces('CW')                
            
             
 if __name__ == '__main__':
@@ -390,5 +449,7 @@ if __name__ == '__main__':
     s.solve_yellow_corners()
     c.cube_plot(title_str = 'after yellow corners')
     s.position_yellow_corners()
-    c.cube_plot(title_str = 'after positioning yellow corners')    
+    c.cube_plot(title_str = 'after positioning yellow corners')
+    s.solve_yellow_edges()
+    c.cube_plot(title_str = 'after permuting yellow edges')
     plt.show()
