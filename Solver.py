@@ -430,26 +430,37 @@ class Solver:
             # to move it to the right side and solve the cube
             elif unsolved_face_names[idx] == 'left':
                 self.permute_up_edge_pieces('CW')                
-           
+
+    def solve(self):
+        self.solve_white_cross()
+        self.solve_white_corners()
+        self.solve_middle_edges()
+        self.solve_yellow_cross()    
+        self.solve_yellow_corners()
+        self.position_yellow_corners()
+        self.solve_yellow_edges()
+
+    def solve_and_plot_after_steps(self):
+        self.c.cube_plot(title_str = 'initial state')        
+        self.solve_white_cross()
+        self.c.cube_plot(title_str = 'after white cross')
+        self.solve_white_corners()
+        self.c.cube_plot(title_str = 'after white corners')
+        self.solve_middle_edges()
+        self.c.cube_plot(title_str = 'after middle edges')
+        self.solve_yellow_cross()    
+        self.c.cube_plot(title_str = 'after yellow cross')
+        self.solve_yellow_corners()
+        self.c.cube_plot(title_str = 'after yellow corners')
+        self.position_yellow_corners()
+        self.c.cube_plot(title_str = 'after positioning yellow corners')
+        self.solve_yellow_edges()
+        self.c.cube_plot(title_str = 'after permuting yellow edges')        
             
 if __name__ == '__main__':
     c = Cube()
     c.randomize_state()
     s = Solver(c)
 
-    c.cube_plot()
-    s.solve_white_cross()
-    c.cube_plot(title_str = 'after white cross')
-    s.solve_white_corners()
-    c.cube_plot(title_str = 'after white corners')
-    s.solve_middle_edges()
-    c.cube_plot(title_str = 'after middle edges')
-    s.solve_yellow_cross()    
-    c.cube_plot(title_str = 'after yellow cross')
-    s.solve_yellow_corners()
-    c.cube_plot(title_str = 'after yellow corners')
-    s.position_yellow_corners()
-    c.cube_plot(title_str = 'after positioning yellow corners')
-    s.solve_yellow_edges()
-    c.cube_plot(title_str = 'after permuting yellow edges')
+    s.solve_and_plot_after_steps()
     plt.show()
