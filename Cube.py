@@ -144,6 +144,27 @@ class Cube:
             adj_pieces = [self.pieces[ii] for ii in adj_ii]
             pc.adj_pieces = adj_pieces
 
+
+    def randomize_state(self, seed = None, n_moves=30):
+        faces = ['front', 'right', 'back', 'left', 'up', 'down']
+        axes  = ['x', 'y', 'z']
+        
+        if seed is not None:
+            np.random.seed(seed)
+            
+        for i in range(n_moves):
+            move_id = np.random.randint(0, 9)
+            n_rot   = np.random.randint(0, 4)
+            
+            if move_id in range(6):            
+                self.rotate_face(faces[move_id], n_rot)
+            elif move_id == 6:
+                self.rotate_x(n_rot)
+            elif move_id == 7:
+                self.rotate_y(n_rot)
+            elif move_id == 8:
+                self.rotate_z(n_rot)            
+            
     def point_to_idx(self, pt):
         x,y,z = pt
         if   z ==  3:
