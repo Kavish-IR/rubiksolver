@@ -85,41 +85,44 @@ class Cube:
     pts = np.zeros((54, 3), dtype='int')
     pieces  = np.zeros(54, dtype=Piece)
     pieces_cube = np.zeros((6, 3, 3), dtype=Piece)
-    cs  = []
+    cs  = ['' for ii in range(54)]
     record_moves = False
     recorded_moves = []
     
-    def __init__(self):
-        ii = 0    
-        for x in [-2, 0, 2]:
-            for y in [-2, 0, 2]:
-                for s, c in enumerate(color_names):
-                    z = (-1)**s * 3
-
-                    # Fill point array
-                    self.pts[ii, (ii+0) % 3] = x
-                    self.pts[ii, (ii+1) % 3] = y
-                    self.pts[ii, (ii+2) % 3] = z
-                    self.cs.append(c)
-
-                    # Fill square array
-                    idx = self.point_to_idx(self.pts[ii,:])                    
-
-                    # Get piece type
-                    if idx in idx_center_pieces:
-                        piece_type = 'center'
-                    elif idx in idx_edge_pieces:
-                        piece_type = 'edge'
-                    elif idx in idx_corner_pieces:
-                        piece_type = 'corner'
-                    
-                    # Fill piece array
-                    self.pieces[ii] = Piece(c, piece_type, ii, np.copy(self.pts[ii,:]), idx)
-                    self.pieces_cube[idx] = self.pieces[ii]
-                    
-                    # Advance index
-                    ii += 1
-        self._init_adjacency_()
+    def __init__(self, cube_state=None):
+        if cube_state is None:
+            ii = 0    
+            for x in [-2, 0, 2]:
+                for y in [-2, 0, 2]:
+                    for s, c in enumerate(color_names):
+                        z = (-1)**s * 3
+                        
+                        # Fill point array
+                        self.pts[ii, (ii+0) % 3] = x
+                        self.pts[ii, (ii+1) % 3] = y
+                        self.pts[ii, (ii+2) % 3] = z
+                        self.cs[ii] = c
+                        
+                        # Fill square array
+                        idx = self.point_to_idx(self.pts[ii,:])                    
+                        
+                        # Get piece type
+                        if idx in idx_center_pieces:
+                            piece_type = 'center'
+                        elif idx in idx_edge_pieces:
+                            piece_type = 'edge'
+                        elif idx in idx_corner_pieces:
+                            piece_type = 'corner'
+                        
+                        # Fill piece array
+                        self.pieces[ii] = Piece(c, piece_type, ii, np.copy(self.pts[ii,:]), idx)
+                        self.pieces_cube[idx] = self.pieces[ii]
+                        
+                        # Advance flat index ii
+                        ii += 1
+            self._init_adjacency_()
+        else:
+            self.set_state(cube_state)
 
     # adjacent pieces need to know that they're adjacent, so we let them know:
     def _init_adjacency_(self):
@@ -146,6 +149,46 @@ class Cube:
             adj_pieces = [self.pieces[ii] for ii in adj_ii]
             pc.adj_pieces = adj_pieces
 
+    def export_state(self):
+        cube_state = np.zeros((6, 3, 3), dtype='<U6')
+        
+        for f in range(6):
+            for i_f in range(3):
+                for j_f in range(3):
+                    idx = (f, i_f, j_f)
+                    cube_state[idx] = self.pieces_cube[idx].color_name
+                    
+        return cube_state
+
+    def set_state(self, cube_state):
+        ii = 0
+        
+        for f in range(6):
+            for i_f in range(3):
+                for j_f in range(3):
+                    # Set idx of piece
+                    idx = (f, i_f, j_f)
+
+                    # Get piece type
+                    if idx in idx_center_pieces:
+                        piece_type = 'center'
+                    elif idx in idx_edge_pieces:
+                        piece_type = 'edge'
+                    elif idx in idx_corner_pieces:
+                        piece_type = 'corner'
+                    
+                    # Fill arrays
+                    self.pieces_cube[idx] = Piece(cube_state[idx], piece_type, ii, self.idx_to_point(idx), idx)
+                    self.pts[ii,:] = np.copy(self.pieces_cube[idx].pt)
+                    self.pieces[ii] = self.pieces_cube[idx]
+                    self.cs[ii] = cube_state[idx]
+
+                    # increment the flat index ii
+                    ii += 1
+                    
+        # update adjacency
+        self._init_adjacency_()
+            
     def start_recorder(self):
         self.record_moves = True
 
@@ -598,6 +641,7 @@ class Cube:
 if __name__ == "__main__":
     c = Cube()
     c.cube_plot()
+    print(type(idx_corner_pieces[0]))
     cp = c.pieces_cube[idx_corner_pieces[0]]
     print(cp.pt, c.corner_piece_solved(cp))
     plt.show()
