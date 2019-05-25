@@ -319,8 +319,12 @@ class Cube:
             self.rotate_face(f, n_rot)
 
     def perform_move(self, move):
-        move_type  = move[-1]
-        n_rot      = int(move[:-1])
+        if len(move) == 1:
+            move_type = move
+            n_rot = 1
+        else:
+            move_type  = move[-1]
+            n_rot      = int(move[:-1])
         
         if move_type == 'U':
             self.rotate_up(n_rot)
@@ -340,6 +344,10 @@ class Cube:
             self.rotate_y(n_rot)
         elif move_type == 'Z':
             self.rotate_z(n_rot)
+
+    def perform_move_list(self, move_list):
+        for move in move_list:
+            self.perform_move(move)
 
     def rotate_face(self, face_name, n):
         if face_name == 'up':
