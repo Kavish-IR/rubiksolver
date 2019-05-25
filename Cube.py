@@ -160,24 +160,16 @@ class Cube:
             self.recorded_moves.append(move)
             
     def randomize_state(self, seed = None, n_moves=30):
-        faces = ['front', 'right', 'back', 'left', 'up', 'down']
-        axes  = ['x', 'y', 'z']
+        move_type = ['F', 'B', 'U', 'D', 'L', 'R', 'X', 'Y', 'Z']
         
         if seed is not None:
             np.random.seed(seed)
             
         for i in range(n_moves):
             move_id = np.random.randint(0, 9)
-            n_rot   = np.random.randint(0, 4)
-            
-            if move_id in range(6):            
-                self.rotate_face(faces[move_id], n_rot)
-            elif move_id == 6:
-                self.rotate_x(n_rot)
-            elif move_id == 7:
-                self.rotate_y(n_rot)
-            elif move_id == 8:
-                self.rotate_z(n_rot)            
+            n_rot   = np.random.randint(-2, 2)
+            move = '{0}{1}'.format(n_rot, move_type[move_id])
+            self.perform_move(move)
             
     def point_to_idx(self, pt):
         x,y,z = pt
