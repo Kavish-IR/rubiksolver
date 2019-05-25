@@ -56,7 +56,7 @@ class Piece:
         self.pt = pt
         self.idx = idx
         self.face      = idx[0]
-        self.face_name = face_dict[self.face]
+        self.face_name = face_dict[self.face]        
         self.adj_pieces = adj_pieces
 
     def update_indices(self, pt, idx):
@@ -86,6 +86,8 @@ class Cube:
     pieces  = np.zeros(54, dtype=Piece)
     pieces_cube = np.zeros((6, 3, 3), dtype=Piece)
     cs  = []
+    record_moves = False
+    recorded_moves = []
     
     def __init__(self):
         ii = 0    
@@ -144,7 +146,19 @@ class Cube:
             adj_pieces = [self.pieces[ii] for ii in adj_ii]
             pc.adj_pieces = adj_pieces
 
+    def start_recorder(self):
+        self.record_moves = True
 
+    def stop_recorder(self):
+        self.record_moves = False
+
+    def flush_recorder(self):
+        self.recorded_moves = []
+
+    def record_move(self, move):
+        if self.record_moves:
+            self.recorded_moves.append(move)
+            
     def randomize_state(self, seed = None, n_moves=30):
         faces = ['front', 'right', 'back', 'left', 'up', 'down']
         axes  = ['x', 'y', 'z']
@@ -379,7 +393,29 @@ class Cube:
                 n_rot = 2
 
             self.rotate_face(f, n_rot)
-                            
+
+    def perform_move(self, move):
+        move_type  = move[-1]
+        n_rot      = int(move[:-1])
+        
+        if move_type == 'U':
+            self.rotate_up(n_rot)
+        elif move_type == 'D':
+            self.rotate_down(n_rot)
+        elif move_type == 'L':
+            self.rotate_left(n_rot)
+        elif move_type == 'R':
+            self.rotate_right(n_rot)
+        elif move_type == 'F':
+            self.rotate_front(n_rot)
+        elif move_type == 'B':
+            self.rotate_back(n_rot)
+        elif move_type == 'X':
+            self.rotate_x(n_rot)
+        elif move_type == 'Y':
+            self.rotate_y(n_rot)
+        elif move_type == 'Z':
+            self.rotate_z(n_rot)
 
     def rotate_face(self, face_name, n):
         if face_name == 'up':
@@ -402,21 +438,27 @@ class Cube:
     
     def rotate_up(self, n):
         self.rotate_z(n, 'up')
+        self.record_move('{0}U'.format(n))
     
     def rotate_down(self, n):
         self.rotate_z(n, 'down')
+        self.record_move('{0}D'.format(n))        
         
     def rotate_left(self, n):
         self.rotate_x(n, 'left')
+        self.record_move('{0}L'.format(n))        
     
     def rotate_right(self, n):
-        self.rotate_x(n, 'right')      
+        self.rotate_x(n, 'right')
+        self.record_move('{0}R'.format(n))        
     
     def rotate_front(self, n):
         self.rotate_y(n, 'front')
+        self.record_move('{0}F'.format(n))        
     
     def rotate_back(self, n):
-        self.rotate_y(n, 'back')              
+        self.rotate_y(n, 'back')
+        self.record_move('{0}B'.format(n))        
         
     def rotate_x(self, n, edge = None):            
         if edge in ['right', face_dict['right']]:
@@ -426,6 +468,7 @@ class Cube:
             n = -n
         else:
             ii_rot = np.arange(0, 54)
+            self.record_move('{0}X'.format(n))            
             
         theta = n * (np.pi / 2)
         M = np.array([[np.cos(theta), -np.sin(theta)],
@@ -444,6 +487,7 @@ class Cube:
             n = -n
         else:
             ii_rot = np.arange(0, 54)
+            self.record_move('{0}Y'.format(n))
             
         theta = n * (np.pi / 2)
         M = np.array([[np.cos(theta), -np.sin(theta)],
@@ -460,7 +504,8 @@ class Cube:
             ii_rot, = np.where(self.pts[:, 2] <= -2)
             n = -n
         else:
-            ii_rot = np.arange(0, 54)            
+            ii_rot = np.arange(0, 54)
+            self.record_move('{0}Z'.format(n))                        
             
         theta = n * (np.pi / 2)
         M = np.array([[np.cos(theta), -np.sin(theta)],

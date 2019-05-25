@@ -432,6 +432,8 @@ class Solver:
                 self.permute_up_edge_pieces('CW')                
 
     def solve(self):
+        self.c.flush_recorder()        
+        self.c.start_recorder()
         self.solve_white_cross()
         self.solve_white_corners()
         self.solve_middle_edges()
@@ -439,8 +441,11 @@ class Solver:
         self.solve_yellow_corners()
         self.position_yellow_corners()
         self.solve_yellow_edges()
+        self.c.stop_recorder()
 
     def solve_and_plot_after_steps(self):
+        self.c.flush_recorder()        
+        self.c.start_recorder()
         self.c.cube_plot(title_str = 'initial state')        
         self.solve_white_cross()
         self.c.cube_plot(title_str = 'after white cross')
@@ -455,12 +460,13 @@ class Solver:
         self.position_yellow_corners()
         self.c.cube_plot(title_str = 'after positioning yellow corners')
         self.solve_yellow_edges()
-        self.c.cube_plot(title_str = 'after permuting yellow edges')        
+        self.c.cube_plot(title_str = 'after permuting yellow edges')
+        self.c.stop_recorder()        
             
 if __name__ == '__main__':
-    c = Cube()
+    c = Cube()    
     c.randomize_state()
     s = Solver(c)
-
     s.solve_and_plot_after_steps()
+    print(c.recorded_moves)
     plt.show()
