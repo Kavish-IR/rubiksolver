@@ -568,13 +568,15 @@ class Cube:
         if ax is None:
             fig = plt.figure(figsize=(8,8))
             ax = fig.add_subplot(111, projection='3d')
+            
         ax.scatter(self.pts[:,0], self.pts[:,1], self.pts[:,2], c = self.cs,
                    edgecolors='k', s =100)
         ax.set_xlim([-3.01,3.01])
         ax.set_ylim([-3.01,3.01])
         ax.set_zlim([-3.01,3.01])
         ax.axis('off')
-        plt.axis('equal')
+        ax.set_aspect('equal')
+
         return ax
 
     def cube_plot(self, ax=None, title_str=""):
@@ -612,8 +614,9 @@ class Cube:
         ax.set_title(title_str)        
         return ax
 
-    def square_plot(self):
-        fig, axs = plt.subplots(2,3)        
+    def square_plot(self, axs=None):
+        if axs == None:
+            fig, axs = plt.subplots(2,3)        
         
         for f in range(6):
             i = f % 3
