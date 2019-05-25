@@ -23,7 +23,7 @@ plotting functions to display the cube's state. I just need to add a
 bit on the output / completely add the input and things should be good
 (:
 
-## Example: Solving a random initial state.
+## Example 1: Solving a random initial state (big steps):
 
 As an example, I put the cube into a randomized initial state and let
 the solver run, displaying the cube's state after each major solution
@@ -39,4 +39,13 @@ method](https://www.rubiks.com/how-to-solve-rubiks-cube).
 <img src="./img/step_5_yellow_corners.png" width="300">
 <img src="./img/step_6_permute_corners.png" width="300">
 <img src="./img/step_7_permute_edges.png" width="300">
+</p>
+
+## Example 2: Solving a random initial state (every move):
+
+For a second example, I ran the solver and recorded every move
+performed. The result is the gif below:
+
+<p float = "center">
+<img src="./img/solution_example.gif">
 </p>
