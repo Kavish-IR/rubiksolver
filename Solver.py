@@ -66,7 +66,7 @@ class Solver:
         # We will solve corners one-by-one clock-wise
         for i in range(4):
             pt_corner_to_solve = np.array([2, -2, 3], dtype='int')
-            colors_to_solve = [c.face_color('right'), c.face_color('front')]
+            colors_to_solve = [self.c.face_color('right'), self.c.face_color('front')]
 
             # identify the corner we need to send to the target_corner
             for piece_to_solve in white_corner_pieces:
