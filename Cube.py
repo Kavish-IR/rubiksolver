@@ -565,8 +565,8 @@ class Cube:
         ax.set_ylim([-3.01,3.01])
         ax.set_zlim([-3.01,3.01])
         ax.axis('off')
-        ax.set_title(title_str)
-        plt.axis('equal')
+        ax.set_aspect('equal')
+        ax.set_title(title_str)        
         return ax
 
     def square_plot(self):
