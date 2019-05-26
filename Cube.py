@@ -569,6 +569,7 @@ class Cube:
             fig = plt.figure(figsize=(8,8))
             ax = fig.add_subplot(111, projection='3d')
             
+        ax.clear()
         ax.scatter(self.pts[:,0], self.pts[:,1], self.pts[:,2], c = self.cs,
                    edgecolors='k', s =100)
         ax.set_xlim([-3.01,3.01])
@@ -583,6 +584,8 @@ class Cube:
         if ax is None:
             fig = plt.figure(figsize=(8,8))
             ax = fig.add_subplot(111, projection='3d')
+        else:
+            ax.clear()
         
         for idx, p in enumerate(self.pts):
             if abs(p[2]) > 2.5:
@@ -605,7 +608,7 @@ class Cube:
                                 
             ax.plot_surface(xs,ys,zs, color = self.cs[idx],
                             edgecolor='k', shade=False, linewidth=3)
-                
+
         ax.set_xlim([-3.01,3.01])
         ax.set_ylim([-3.01,3.01])
         ax.set_zlim([-3.01,3.01])
@@ -615,13 +618,14 @@ class Cube:
         return ax
 
     def square_plot(self, axs=None):
-        if axs == None:
+        if axs is None:
             fig, axs = plt.subplots(2,3)        
         
         for f in range(6):
             i = f % 3
             j = int(f / 3)
             ax = axs[j][i]
+            ax.clear()
             
             for s in range(9):
                 i_f = s % 3
@@ -632,11 +636,11 @@ class Cube:
                 ax.add_patch(Rectangle((x, y), width = 1, height = 1,
                                        facecolor = c, linewidth=2,
                                        edgecolor='k'))
-                ax.set_title(face_dict[f] + " " + str(f))
-                ax.set_xlim(0, 3)
-                ax.set_ylim(0, 3)                
-                ax.axis('equal')
-                ax.axis('off')
+            ax.set_title(face_dict[f])
+            ax.set_xlim(0, 3)
+            ax.set_ylim(0, 3)
+            ax.axis('equal')
+            ax.axis('off')
                 
         plt.tight_layout()
         return axs
