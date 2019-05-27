@@ -572,9 +572,9 @@ class Cube:
         ax.clear()
         ax.scatter(self.pts[:,0], self.pts[:,1], self.pts[:,2], c = self.cs,
                    edgecolors='k', s =100)
-        ax.set_xlim([-3.01,3.01])
-        ax.set_ylim([-3.01,3.01])
-        ax.set_zlim([-3.01,3.01])
+        ax.set_xlim([-4.0,4.0])
+        ax.set_ylim([-4.0,4.0])
+        ax.set_zlim([-4.0,4.0])
         ax.axis('off')
         ax.set_aspect('equal')
 
@@ -609,12 +609,13 @@ class Cube:
             ax.plot_surface(xs,ys,zs, color = self.cs[idx],
                             edgecolor='k', shade=False, linewidth=3)
 
-        ax.set_xlim([-3.01,3.01])
-        ax.set_ylim([-3.01,3.01])
-        ax.set_zlim([-3.01,3.01])
+        ax.set_xlim([-4.0,4.0])
+        ax.set_ylim([-4.0,4.0])
+        ax.set_zlim([-4.0,4.0])
         ax.axis('off')
         ax.set_aspect('equal')
-        ax.set_title(title_str)        
+        ax.set_title(title_str, fontsize=18, fontweight='bold')
+        ax.view_init(elev=30, azim=-45)        
         return ax
 
     def square_plot(self, axs=None):
