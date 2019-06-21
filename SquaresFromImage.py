@@ -419,7 +419,7 @@ def plot_contours(contours, ax=None, color='g'):
             ax.plot(np.array([p_0[0], p_1[0]]), np.array([p_0[1], p_1[1]]), c=color)
 
             
-def process_frame(img_bgr, axs):
+def process_frame(img_bgr):
     # Convert to RGB and rescale
     img = cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
     nx, ny = img.shape[1], img.shape[0]
@@ -462,7 +462,7 @@ def process_frame(img_bgr, axs):
     
     # Filter squares by area
     filtered_squares = filter_by_area(squares)
-    filtered_means = np.array([np.mean(ps, axis=0).squeeze() for ps in filtered_squares])
+    filtered_square_means = np.array([np.mean(ps, axis=0).squeeze() for ps in filtered_squares])
     
     # Orientation?
     x_ax_avg, y_ax_avg = aligned_axes(filtered_squares)
@@ -472,7 +472,19 @@ def process_frame(img_bgr, axs):
 
     # Extract faces
     faces = extract_faces(img, recoord_squares)
+
+    # All demo display data
+    display_data = {'img' : img, 'img_filtered' : img_filtered, 'img_filtered_gray' : img_filtered_gray,
+                    'img_thresh' : img_thresh,  'img_close' : img_close, 'img_thresh2' : img_thresh2,
+                    'img_dilate' : img_dilate,  'markers' : markers, 'quads' : quads, 'quad_means' : quad_means,
+                    'squares' : squares, 'square_means' : square_means, 'filtered_squares' : filtered_squares,
+                    'filtered_square_means' : filtered_square_means, 'recoord_squares' : recoord_squares,
+                    'recoord_square_means' : recoord_square_means, 'faces' : faces}
     
+    return faces, display_data
+    
+    
+def display_result(display_data, axs):
     # Turn off ticks on all plots
     for ax_row in axs:
         for ax in ax_row:
@@ -486,99 +498,105 @@ def process_frame(img_bgr, axs):
     # Plot original
     i_plot = 0
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot]
-    ax.imshow(img)
+    ax.imshow(display_data['img'])
     ax.set_title('img')
     
     # Plot filtered image
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]   
-    ax.imshow(255 - img_filtered)
+    ax.imshow(255 - display_data['img_filtered'])
     ax.set_title('img_filtered')
 
     # Plot grayscale version of filtered image
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]       
-    ax.imshow(img_filtered_gray, cmap='Greys')
+    ax.imshow(display_data['img_filtered_gray'], cmap='Greys')
     ax.set_title('img_filtered_gray')
     
     # Plot thresholded grayscale image
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]       
-    ax.imshow(img_thresh, cmap='Greys')
+    ax.imshow(display_data['img_thresh'], cmap='Greys')
     ax.set_title('img_thresh')
 
     # Plot morphological closure of grayscale image
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]           
-    ax.imshow(img_thresh, cmap='Greys')
+    ax.imshow(display_data['img_thresh'], cmap='Greys')
     ax.set_title('img_close')
 
     # Plot threshold of morphological closure image
     i_plot += 1    
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]               
-    ax.imshow(img_thresh2, cmap='Greys')
+    ax.imshow(display_data['img_thresh2'], cmap='Greys')
     ax.set_title('img_thresh2')
 
     # Dilate the thresholded image to close up holes
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ] 
-    ax.imshow(img_dilate, cmap='Greys')
+    ax.imshow(display_data['img_dilate'], cmap='Greys')
     ax.set_title('img_dilate')
 
     # Plot the connected components of the last image
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ] 
-    ax.imshow(markers, cmap='jet')
+    ax.imshow(display_data['markers'], cmap='jet')
     ax.set_title('markers')
 
     # Plot the boundaries of regions whose convex hulls are
     # approximately quadrilateral
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]     
-    ax.imshow(np.zeros_like(img), cmap='Greys')
-    plot_contours(quads, ax=ax, color='w')
-    ax.scatter(quad_means[:,0], quad_means[:,1], c='r')
+    ax.imshow(np.zeros_like(display_data['img']), cmap='Greys')
+    plot_contours(display_data['quads'], ax=ax, color='w')
+    ax.scatter(display_data['quad_means'][:,0],
+               display_data['quad_means'][:,1], c='r')
     ax.set_title('quads')
 
     # Plot the boundaries of regions whos convex hulls are
     # approximately squares
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]     
-    ax.imshow(np.zeros_like(img), cmap='Greys')
-    plot_contours(squares, ax=ax, color='w')
-    ax.scatter(square_means[:,0], square_means[:,1], c='r')
+    ax.imshow(np.zeros_like(display_data['img']), cmap='Greys')
+    plot_contours(display_data['squares'], ax=ax, color='w')
+    ax.scatter(display_data['square_means'][:,0],
+               display_data['square_means'][:,1], c='r')
     ax.set_title('squares')    
 
     # Plot squares that are close enough in size
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]         
-    ax.imshow(np.zeros_like(img), cmap='Greys')
-    plot_contours(filtered_squares, ax=ax, color='w')
-    ax.scatter(filtered_means[:,0], filtered_means[:,1], c='r')
+    ax.imshow(np.zeros_like(display_data['img']), cmap='Greys')
+    plot_contours(display_data['filtered_squares'], ax=ax, color='w')
+    ax.scatter(display_data['filtered_square_means'][:,0],
+               display_data['filtered_square_means'][:,1], c='r')
     ax.set_title('filtered_squares')
 
     # recoordinatized
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]
-    ax.imshow(np.zeros_like(img), cmap='Greys')
-    plot_contours(filtered_squares, ax=ax, color='w')    
-    ax.scatter(filtered_means[:,0], filtered_means[:,1], c='r')
-    plot_contours(recoord_squares, ax=ax, color='y')        
-    ax.scatter(recoord_square_means[:,0], recoord_square_means[:,1], c='C1')
+    ax.imshow(np.zeros_like(display_data['img']), cmap='Greys')
+    plot_contours(display_data['filtered_squares'], ax=ax, color='w')    
+    ax.scatter(display_data['filtered_square_means'][:,0],
+               display_data['filtered_square_means'][:,1], c='r')
+    plot_contours(display_data['recoord_squares'], ax=ax, color='y')        
+    ax.scatter(display_data['recoord_square_means'][:,0],
+               display_data['recoord_square_means'][:,1], c='C1')
     ax.set_title('recoordinatized')
 
     # recoordinatized
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]
-    ax.imshow(cv.cvtColor(img, cv.COLOR_RGB2GRAY), cmap='Greys_r')        
-    plot_contours(recoord_squares, ax=ax, color='lime')        
-    ax.scatter(recoord_square_means[:,0], recoord_square_means[:,1], c='lime')
+    ax.imshow(cv.cvtColor(display_data['img'], cv.COLOR_RGB2GRAY), cmap='Greys_r')        
+    plot_contours(display_data['recoord_squares'], ax=ax, color='lime')        
+    ax.scatter(display_data['recoord_square_means'][:,0],
+               display_data['recoord_square_means'][:,1], c='lime')
     ax.set_title('recoordinatized')    
 
     # extract faces
     i_plot += 1
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]
-    ax.imshow(faces)
+    ax.imshow(display_data['faces'])
     for i in range(3):
         ax.plot([0, 150], [50 * i, 50 * i], c='k')
         ax.plot([50 * i, 50 * i], [0, 150], c='k')        
@@ -590,7 +608,7 @@ def process_frame(img_bgr, axs):
 
 
 #########################################################################
-# Plot the result '
+# Plot the result 
 n_plot   = 3
 m_plot   = 5
 fig, axs = plt.subplots(n_plot, m_plot, figsize=(5 * m_plot, 5 * n_plot))
@@ -609,7 +627,8 @@ if len(sys.argv) <= 1:
         if exit_program:
             break    
         else:
-            process_frame(img_bgr, axs)
+            faces, display_data = process_frame(img_bgr)
+            display_result(display_data, axs)
         
     plt.ioff()    
     
