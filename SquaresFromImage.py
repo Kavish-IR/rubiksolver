@@ -482,19 +482,35 @@ def process_frame(img_bgr):
                     'recoord_square_means' : recoord_square_means, 'faces' : faces}
     
     return faces, display_data
+
+
+def create_display_plot():
+    # Plot the result 
+    n_plot   = 3
+    m_plot   = 5
+    fig, axs = plt.subplots(n_plot, m_plot, figsize=(5 * m_plot, 5 * n_plot))
+    clear_display_plot(axs)
     
-    
-def display_result(display_data, axs):
+    return fig, axs
+
+def clear_display_plot(axs):
     # Turn off ticks on all plots
     for ax_row in axs:
         for ax in ax_row:
             ax.clear()
             ax.set_xticks([],[])
-            ax.set_yticks([],[])    
+            ax.set_yticks([],[])
+    
+def display_result(display_data, axs = None):
+    if axs is None:
+        fig, axs = create_display_plot()
 
     n_plot = len(axs)
     m_plot = len(axs[0])
-    
+
+    # Clear existing plots
+    clear_display_plot(axs)
+            
     # Plot original
     i_plot = 0
     ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot]
@@ -606,34 +622,36 @@ def display_result(display_data, axs):
     
     plt.draw()
 
+    return axs
 
-#########################################################################
-# Plot the result 
-n_plot   = 3
-m_plot   = 5
-fig, axs = plt.subplots(n_plot, m_plot, figsize=(5 * m_plot, 5 * n_plot))
-
-
-################################################################################
-# Read original image
-if len(sys.argv) <= 1:
-    plt.ion()
-    plt.show()
-    cap = cv.VideoCapture(0)
-
-    while True:
-        img_bgr, exit_program = capture_image(cap)
-        
-        if exit_program:
-            break    
-        else:
-            faces, display_data = process_frame(img_bgr)
-            display_result(display_data, axs)
-        
-    plt.ioff()    
+def process_images(input_file = None):
+    fig, axs = create_display_plot()
     
-else:
-    img_bgr = cv.imread(sys.argv[1], 3)
-    process_frame(img_bgr, axs)
-    plt.show()
+    if input_file is None:
+        plt.ion()
+        plt.show()
+        cap = cv.VideoCapture(0)
+        
+        while True:
+            img_bgr, exit_program = capture_image(cap)
+        
+            if exit_program:
+                break    
+            else:
+                faces, display_data = process_frame(img_bgr)
+                display_result(display_data, axs)
+        
+        plt.ioff()    
+    
+    else:
+        img_bgr = cv.imread(input_file, 3)
+        faces, display_data = process_frame(img_bgr)
+        display_result(display_data, axs)
+        plt.show()
 
+if __name__ == '__main__':
+    if len(sys.argv) <= 1:
+        process_images()
+    else:
+        process_images(sys.argv[1])
+    
