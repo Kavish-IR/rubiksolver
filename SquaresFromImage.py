@@ -30,15 +30,23 @@ def capture_image(cap = None):
         
         # Take a picture if space is pressed
         if key_press % 256 == 32:
-            exit_program = 0
+            retake_image = 0
+            exit_program = 0            
+            break
+
+        # Retake last image
+        if key_press % 0xFF == ord('r'):
+            retake_image = 1
+            exit_program = 0            
             break
         
         # Quit the program if q is pressed
         if key_press & 0xFF == ord('q'):
-            exit_program = 1
+            retake_image = 0
+            exit_program = 1            
             break
         
-    return frame, exit_program
+    return frame, retake_image, exit_program
 
 
 def hipass_filter_img(img):
@@ -631,27 +639,35 @@ def process_images(input_file = None):
         plt.ion()
         plt.show()
         cap = cv.VideoCapture(0)
+
+        captured_faces = []
         
         while True:
-            img_bgr, exit_program = capture_image(cap)
-        
-            if exit_program:
+            img_bgr, retake_image, exit_program = capture_image(cap)
+
+            if retake_image and len(captured_faces) > 0:
+                captured_faces.pop()            
+            elif exit_program:
                 break    
             else:
                 faces, display_data = process_frame(img_bgr)
                 display_result(display_data, axs)
-        
+                captured_faces.append(faces)
+
         plt.ioff()    
     
     else:
         img_bgr = cv.imread(input_file, 3)
         faces, display_data = process_frame(img_bgr)
+        captured_faces = [faces]
         display_result(display_data, axs)
         plt.show()
 
+    return captured_faces
+
 if __name__ == '__main__':
     if len(sys.argv) <= 1:
-        process_images()
+        captured_faces = process_images()
     else:
-        process_images(sys.argv[1])
+        captured_faces = process_images(sys.argv[1])
     
