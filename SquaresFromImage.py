@@ -497,11 +497,11 @@ def create_display_plot():
     n_plot   = 3
     m_plot   = 5
     fig, axs = plt.subplots(n_plot, m_plot, figsize=(5 * m_plot, 5 * n_plot))
-    clear_display_plot(axs)
+    clear_plot_axes(axs)
     
     return fig, axs
 
-def clear_display_plot(axs):
+def clear_plot_axes(axs):
     # Turn off ticks on all plots
     for ax_row in axs:
         for ax in ax_row:
@@ -517,7 +517,7 @@ def display_result(display_data, axs = None):
     m_plot = len(axs[0])
 
     # Clear existing plots
-    clear_display_plot(axs)
+    clear_plot_axes(axs)
             
     # Plot original
     i_plot = 0
@@ -632,7 +632,7 @@ def display_result(display_data, axs = None):
 
     return axs
 
-def process_images(input_file = None):
+def extract_squares_from_image(input_file = None):
     fig, axs = create_display_plot()
     
     if input_file is None:
@@ -646,9 +646,11 @@ def process_images(input_file = None):
             img_bgr, retake_image, exit_program = capture_image(cap)
 
             if retake_image and len(captured_faces) > 0:
-                captured_faces.pop()            
+                captured_faces.pop()
+                
             elif exit_program:
-                break    
+                break
+            
             else:
                 faces, display_data = process_frame(img_bgr)
                 display_result(display_data, axs)
@@ -665,9 +667,77 @@ def process_images(input_file = None):
 
     return captured_faces
 
+class retake_handler:
+    def __init__(self, fig):
+        self.k = None
+        self.fig = fig
+        
+    def retake(self, event):
+        sys.stdout.flush()        
+        self.k = event.key
+
+def review_faces(captured_faces):
+    fig, axs = plt.subplots(2,3) 
+    clear_plot_axes(axs)
+    
+    rh = retake_handler(fig)    
+    cid = fig.canvas.mpl_connect('key_press_event', rh.retake)
+    plt.suptitle('Press r to retake last. q to quit.')
+    
+    for i in range(2):
+        for j in range(3):
+            axs[i][j].imshow(np.flipud(captured_faces[3*i+j]))
+    plt.draw()
+
+    key_press = False
+    while key_press != True and rh.k not in ['r','R','q','Q']:
+        key_press = plt.waitforbuttonpress()
+
+    plt.disconnect(cid)
+    plt.close(fig)
+
+    return (rh.k == 'r' or rh.k == 'R')
+    
+
+def extract_cube_faces_from_stream():
+    fig, axs = create_display_plot()
+    
+    plt.ion()
+    plt.show()
+    cap = cv.VideoCapture(0)
+    
+    captured_faces = []
+    
+    while True:
+        img_bgr, retake_image, exit_program = capture_image(cap)
+        
+        if retake_image and len(captured_faces) > 0:
+            captured_faces.pop()
+            
+        elif exit_program:
+            break
+        
+        else:
+            faces, display_data = process_frame(img_bgr)
+            display_result(display_data, axs)
+            captured_faces.append(faces)
+
+        if len(captured_faces) > 5:
+            pop_last = review_faces(captured_faces)
+            
+            if pop_last:
+                captured_faces.pop()
+            else:
+                break
+            
+    plt.ioff()    
+
+    return captured_faces
+
+
 if __name__ == '__main__':
     if len(sys.argv) <= 1:
-        captured_faces = process_images()
+        captured_faces = extract_cube_faces_from_stream()
     else:
-        captured_faces = process_images(sys.argv[1])
+        captured_faces = extract_squares_from_image(sys.argv[1])
     
