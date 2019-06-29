@@ -735,6 +735,19 @@ def extract_cube_faces_from_stream():
     return captured_faces
 
 
+def extract_cube_faces_from_images(image_file_list):
+    plt.ion()
+    plt.show()
+    captured_faces = []
+    
+    for i, image_file in enumerate(image_file_list):
+        faces = extract_squares_from_image(input_file = image_file)[0]
+        captured_faces.append(faces)
+            
+    plt.ioff()    
+
+    return captured_faces
+
 if __name__ == '__main__':
     if len(sys.argv) <= 1:
         captured_faces = extract_cube_faces_from_stream()
