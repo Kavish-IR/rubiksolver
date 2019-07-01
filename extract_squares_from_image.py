@@ -626,7 +626,7 @@ def display_result(display_data, axs = None):
         ax.plot([50 * i, 50 * i], [0, 150], c='k')        
     ax.set_xlim([0,150])
     ax.set_ylim([0,150])
-    ax.set_title('faces')
+    ax.set_title('extracted squares')
     
     plt.draw()
 
