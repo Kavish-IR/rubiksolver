@@ -14,7 +14,6 @@ class SolutionGallery:
         self.i = 0
         self.n_moves = len(solve_moves)
         self.c = Cube()
-        self.c = c
         self.c.set_state(initial_state)
         self.solve_moves = solve_moves
 
