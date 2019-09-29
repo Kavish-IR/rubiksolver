@@ -72,12 +72,16 @@ class Solver:
             for piece_to_solve in white_corner_pieces:
                 if piece_to_solve.adjacent_color_names() == set(colors_to_solve):
                     break
-                
+
             # all points will move here
             target_corner = set(['front', 'right', 'up'])
 
+            # if already solved don't do anything
+            if self.c.corner_piece_solved(piece_to_solve):
+                pass
+
             # piece is unsolved, but in the target corner. this will move it to front,down,right position
-            if piece_to_solve.corner() == target_corner:
+            elif piece_to_solve.corner() == target_corner:
                 self.c.rotate_right(-1)
                 self.c.rotate_down(-1)
                 self.c.rotate_right(1)
@@ -119,7 +123,7 @@ class Solver:
                 self.c.rotate_right(1)
 
             # case that white is on down face
-            else:
+            elif not self.c.corner_piece_solved(piece_to_solve):
                 self.c.rotate_right(-1)
                 self.c.rotate_down(-2)
                 self.c.rotate_right(1)
@@ -154,46 +158,48 @@ class Solver:
         for i in range(4):
             colors_to_solve = [self.c.face_color('front'), self.c.face_color('right')]
             ep_to_solve = self.c.edge_piece_matching_colors(colors_to_solve[0], colors_to_solve[1])
+            
+            if not self.c.edge_piece_solved(ep_to_solve):
+                
+                if 'up' not in ep_to_solve.edge():
+                    if ep_to_solve.edge() == set(['right', 'back']):
+                        self.remove_middle_edge_piece('right')
+                    elif ep_to_solve.edge() == set(['left', 'back']):
+                        self.remove_middle_edge_piece('back')
+                    elif ep_to_solve.edge() == set(['left', 'front']):
+                        self.remove_middle_edge_piece('left')
+                    elif ep_to_solve.edge() == set(['front', 'right']):
+                        self.remove_middle_edge_piece('front')
+                
+                if ep_to_solve.face_name == 'up':
+                    ep_to_solve = ep_to_solve.adj_pieces[0]
+                starting_edge = ep_to_solve.face_name
 
-            if 'up' not in ep_to_solve.edge():
-                if ep_to_solve.edge() == set(['right', 'back']):
-                    self.remove_middle_edge_piece('right')
-                elif ep_to_solve.edge() == set(['left', 'back']):
-                    self.remove_middle_edge_piece('back')
-                elif ep_to_solve.edge() == set(['left', 'front']):
-                    self.remove_middle_edge_piece('left')
-                elif ep_to_solve.edge() == set(['front', 'right']):
-                    self.remove_middle_edge_piece('front')
+                if ep_to_solve.color_name == self.c.face_color('front'):
+                    self.c.rotate_face_edge_to_edge('up', starting_edge, 'front')
+                    self.c.rotate_up(1)
+                    self.c.rotate_right(1)
+                    self.c.rotate_up(-1)
+                    self.c.rotate_right(-1)
+                    self.c.rotate_up(-1)
+                    self.c.rotate_front(-1)
+                    self.c.rotate_up(1)
+                    self.c.rotate_front(1)
                     
-            if ep_to_solve.face_name == 'up':
-                ep_to_solve = ep_to_solve.adj_pieces[0]
-            starting_edge = ep_to_solve.face_name
-
-            if ep_to_solve.color_name == self.c.face_color('front'):
-                self.c.rotate_face_edge_to_edge('up', starting_edge, 'front')
-                self.c.rotate_up(1)
-                self.c.rotate_right(1)
-                self.c.rotate_up(-1)
-                self.c.rotate_right(-1)
-                self.c.rotate_up(-1)
-                self.c.rotate_front(-1)
-                self.c.rotate_up(1)
-                self.c.rotate_front(1)
-                
-            elif ep_to_solve.color_name == self.c.face_color('right'):
-                self.c.rotate_face_edge_to_edge('up', starting_edge, 'right')
+                elif ep_to_solve.color_name == self.c.face_color('right'):
+                    self.c.rotate_face_edge_to_edge('up', starting_edge, 'right')
+                    self.c.rotate_cube_face_to_face('right', 'front')
+                    self.c.rotate_up(-1)
+                    self.c.rotate_left(-1)
+                    self.c.rotate_up(1)
+                    self.c.rotate_left(1)
+                    self.c.rotate_up(1)
+                    self.c.rotate_front(1)
+                    self.c.rotate_up(-1)
+                    self.c.rotate_front(-1)
+                    self.c.rotate_cube_face_to_face('front', 'right')
+                    
                 self.c.rotate_cube_face_to_face('right', 'front')
-                self.c.rotate_up(-1)
-                self.c.rotate_left(-1)
-                self.c.rotate_up(1)
-                self.c.rotate_left(1)
-                self.c.rotate_up(1)
-                self.c.rotate_front(1)
-                self.c.rotate_up(-1)
-                self.c.rotate_front(-1)
-                self.c.rotate_cube_face_to_face('front', 'right')
-                
-            self.c.rotate_cube_face_to_face('right', 'front')
     
     def solve_yellow_cross(self):
         yellow_edge_pieces = self.c.edge_pieces_matching_color('yellow')
