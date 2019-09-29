@@ -1,4 +1,4 @@
-from extract_squares_from_image import extract_cube_faces_from_stream
+from extract_squares_from_image import extract_cube_faces_from_stream, capture_faces
 from color_classifier import get_classifier, label_images
 import numpy as np
 from Cube import Cube
@@ -7,7 +7,8 @@ from SolutionGallery import SolutionGallery
 import matplotlib.pyplot as plt
 
 #def main():
-captured_faces, captured_imgs = extract_cube_faces_from_stream()
+#captured_faces, captured_imgs = extract_cube_faces_from_stream()
+captured_faces, captured_imgs = capture_faces()
 clf_yuv = get_classifier()
 
 # Flips

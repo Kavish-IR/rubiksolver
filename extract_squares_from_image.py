@@ -707,6 +707,41 @@ def review_faces(captured_faces):
     return (rh.k == 'r' or rh.k == 'R')
     
 
+def capture_faces():
+    fig, ax = plt.subplots()    
+    plt.ion()
+    plt.show()
+    cap = cv.VideoCapture(0)
+    
+    captured_faces = []
+    captured_imgs  = []
+    
+    for i in range(6):
+        img_bgr, retake_image, exit_program = capture_image(cap)        
+        captured_imgs.append(img_bgr)
+        ax.imshow(cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB))
+
+    cap.release()                
+    cv.destroyAllWindows()
+    plt.close(fig)
+    plt.ioff()
+
+    for img_bgr in captured_imgs:
+        try:
+           faces, display_data = process_frame(img_bgr)
+        except:
+            manual_square_extractor = ManualSquareExtractor(
+                cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
+            )
+            plt.show()
+            faces = np.flip(manual_square_extractor.faces, 0)
+        captured_faces.append(np.copy(faces))
+        
+    return captured_faces, captured_imgs
+
+
+
+
 def extract_cube_faces_from_stream():
     fig, axs = create_display_plot()
     
@@ -758,8 +793,6 @@ def extract_cube_faces_from_stream():
     plt.ioff()    
     cv.destroyAllWindows()
     return captured_faces, captured_imgs
-
-
 
 
 
