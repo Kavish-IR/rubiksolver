@@ -5,6 +5,7 @@ from scipy import spatial
 import numpy.random as rng
 import time
 import sys
+from manual_square_extractor import ManualSquareExtractor
 
 def capture_image(cap = None):
     if cap is None:
@@ -632,38 +633,45 @@ def display_result(display_data, axs = None):
 
     return axs
 
-def extract_squares_from_image(input_file = None):
+def extract_squares_from_image(input_file):
     fig, axs = create_display_plot()
     
-    if input_file is None:
-        plt.ion()
-        plt.show()
-        cap = cv.VideoCapture(0)
+    # if input_file is None:
+    #     plt.ion()
+    #     plt.show()
+    #     cap = cv.VideoCapture(0)
 
-        captured_faces = []
+    #     captured_faces = []
         
-        while True:
-            img_bgr, retake_image, exit_program = capture_image(cap)
+    #     while True:
+    #         img_bgr, retake_image, exit_program = capture_image(cap)
 
-            if retake_image and len(captured_faces) > 0:
-                captured_faces.pop()
+    #         if retake_image and len(captured_faces) > 0:
+    #             captured_faces.pop()
                 
-            elif exit_program:
-                break
+    #         elif exit_program:
+    #             break
             
-            else:
-                faces, display_data = process_frame(img_bgr)
-                display_result(display_data, axs)
-                captured_faces.append(faces)
+    #         else:
+    #             faces, display_data = process_frame(img_bgr)
+    #             display_result(display_data, axs)
+    #             captured_faces.append(faces)
 
-        plt.ioff()    
-    
-    else:
+    #     plt.ioff()    
+
+    try:
         img_bgr = cv.imread(input_file, 3)
         faces, display_data = process_frame(img_bgr)
         captured_faces = [faces]
         display_result(display_data, axs)
-        plt.show()
+    except:
+        manual_square_extractor = ManualSquareExtractor(
+            cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
+        )
+        captured_faces = []
+        captured_faces.append(manual_square_extractor.faces)
+        
+    plt.show()
 
     return captured_faces
 
@@ -707,32 +715,52 @@ def extract_cube_faces_from_stream():
     cap = cv.VideoCapture(0)
     
     captured_faces = []
+    captured_imgs  = []
     
     while True:
         img_bgr, retake_image, exit_program = capture_image(cap)
         
         if retake_image and len(captured_faces) > 0:
             captured_faces.pop()
+            captured_imgs.pop()
             
         elif exit_program:
             break
         
         else:
-            faces, display_data = process_frame(img_bgr)
-            display_result(display_data, axs)
-            captured_faces.append(faces)
+            try:
+                faces, display_data = process_frame(img_bgr)                
+            except:
+                manual_square_extractor = ManualSquareExtractor(
+                    cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
+                )
+                
+                while manual_square_extractor.faces is None:
+                    plt.pause(1.5)
 
+                captured_faces.append(manual_square_extractor.faces)
+                plt.close(manual_square_extractor.fig)
+
+            else:
+                display_result(display_data, axs)                
+                captured_faces.append(faces)
+                captured_imgs.append(cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB))
+            
         if len(captured_faces) > 5:
             pop_last = review_faces(captured_faces)
             
             if pop_last:
                 captured_faces.pop()
+                captured_imgs.pop()
             else:
                 break
             
     plt.ioff()    
+    cv.destroyAllWindows()
+    return captured_faces, captured_imgs
 
-    return captured_faces
+
+
 
 
 def extract_cube_faces_from_images(image_file_list):
@@ -750,7 +778,7 @@ def extract_cube_faces_from_images(image_file_list):
 
 if __name__ == '__main__':
     if len(sys.argv) <= 1:
-        captured_faces = extract_cube_faces_from_stream()
+        captured_faces, captured_imgs = extract_cube_faces_from_stream()
     else:
         captured_faces = extract_squares_from_image(sys.argv[1])
     
