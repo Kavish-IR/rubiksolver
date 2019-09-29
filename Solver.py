@@ -56,7 +56,7 @@ class Solver:
                     self.c.rotate_right(2)
 
                 if not self.c.edge_piece_solved(ep_to_solve):
-                    self.c.cube_plot('Something went wrong with the current edge piece.')
+                    self.c.cube_plot(title_str = 'Something went wrong with the current edge piece.')
             
             
     def solve_white_corners(self):        
