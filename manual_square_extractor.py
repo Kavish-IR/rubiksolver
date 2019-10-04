@@ -6,39 +6,49 @@ import sys
 import cv2 as cv
 
 class ManualSquareExtractor:
-    def __init__(self, img):
-        
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.imshow(img)
-        ax.set_title('click to draw a square')
-        ax.set_aspect('equal')
-        ax.set_xticks([],[])
-        ax.set_yticks([],[])
-        
+    def __init__(self, img, fig = None, ax = None):
+        # set up figure for interface
+        if fig is None or ax is None:
+            fig = plt.figure()
+            ax  = fig.add_subplot(111)
+
+        # Set up canvas and image / etc
         self.fig = fig
-        self.ax = ax
+        self.ax  = ax
         self.img = img
-                
-        self.state = "add_squares"
-        self.c = fig.canvas
-        self.clicker = self.c.mpl_connect('button_press_event', self.add_square)
-        self.presser = self.c.mpl_connect('key_press_event', self.key_press)
-        
-        self.square_list = []
+        self.c = self.fig.canvas
+        self.show_img()
 
-        self.pts = np.zeros((4, 2))
-        self.update_rightmost_point(np.zeros((1,2)))
-
+        # Figure elements 
         self.lines = []
         self.scatters = []
-        self.faces = None
 
+        # State for interface
+        self.state = "add_squares"
+        self.complete = False
+
+        # Connect event listeners
+        self.connect()
+
+        # Set up storage for squares and faces
+        self.square_list = []
+        self.pts = np.zeros((4, 2))
+        self.update_rightmost_point(np.zeros((1,2)))        
+        self.faces = None
+        
+    def connect(self):
+        # Add event listeners
+        self.clicker  = self.c.mpl_connect("button_press_event",  lambda e: self.button_press(e))
+        self.presser  = self.c.mpl_connect("key_press_event",     lambda e: self.key_press(e))
+        self.follower = self.c.mpl_connect("motion_notify_event", lambda e: self.followmouse(e))
+        
     def show_img(self):
         self.ax.imshow(self.img)
-        self.ax.set_title('click to draw a square')
+        self.ax.set_title('Click to add squares along NW to SE diagonal.')
         self.ax.set_aspect('equal')
-
+        self.ax.set_xticks([],[])
+        self.ax.set_yticks([],[])
+        self.fig.canvas.draw()                
         
     def key_press(self, event):
         if event.key == 'ctrl+z':
@@ -47,15 +57,27 @@ class ManualSquareExtractor:
                 self.update_state("add_squares")
             
             if len(self.square_list) > 0:
-                self.square_list.pop()
+                self.remove_last_square()
                 
-                if len(self.square_list) > 0:
-                    self.update_rightmost_point(self.square_list[-1][2, :].reshape((1,2)))
-                else:
-                    self.update_rightmost_point(np.zeros((1,2)))
+        if event.key == 'q':
+            self.complete = True
 
-                self.undraw_last_square()
+    def remove_last_square(self):
+        # remove last square from list of squares
+        self.square_list.pop()
+        
+        # update rightmost point, set to upper left corner if no squares remain
+        if len(self.square_list) > 0:
+            self.update_rightmost_point(self.square_list[-1][2, :].reshape((1,2)))
+        else:
+            self.update_rightmost_point(np.zeros((1,2)))
 
+        # remove the last square from drawing
+        self.undraw_last_square()
+                
+    def button_press(self, event):
+        self.add_square(event)
+                
     def undraw_last_square(self):
         l = self.lines.pop()
         s = self.scatters.pop()
@@ -76,8 +98,7 @@ class ManualSquareExtractor:
             self.c.mpl_disconnect(self.clicker)
 
             if new_state == "add_squares":
-                self.clicker = self.c.mpl_connect("button_press_event", self.add_square)
-            
+                self.clicker = self.c.mpl_connect("button_press_event", self.button_press)
 
     def update_rightmost_point(self, pt):
         self.rightmost_pt = np.copy(pt)        
@@ -129,7 +150,6 @@ class ManualSquareExtractor:
         # update points
         self.pts[1, :] = p1 + w
         self.pts[3, :] = p1 + w_perp
-            
         
     def update_lines(self):
         if len(self.lines) > 0:
@@ -147,11 +167,10 @@ class ManualSquareExtractor:
             self.c.draw_idle()            
 
     def followmouse(self, event):
-        p2 = np.array([event.xdata, event.ydata])
-        self.update_square(p2)           
-
-        self.update_lines()            
-        
+        if self.state in ['follow']:
+            p2 = np.array([event.xdata, event.ydata])
+            self.update_square(p2)
+            self.update_lines()     
 
     def releaseonclick(self, event):
         if (np.linalg.norm(self.pts[2, :] - self.pts[0, :]) < 20):        
@@ -232,10 +251,11 @@ class ManualSquareExtractor:
 
         # Show the results
         self.ax.imshow(faces)
+        self.ax.set_title('Press q to accept. Ctrl+z to return to editing.')
         self.c.draw()
 
+        # Retain the extracted faces
         self.faces = faces
-    
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
@@ -244,13 +264,5 @@ if __name__ == '__main__':
         img_path = '/home/publius/Documents/RubiksTest/TestImages/Shot10_2.jpg'
     img = plt.imread(img_path)
 
-    #fig = plt.figure()
-    #ax = fig.add_subplot(111)
-    #ax.imshow(img)
-    #ax.set_title('click to draw a square')
-    #ax.set_aspect('equal')
-    #ax.set_xticks([],[])
-    #ax.set_yticks([],[])
-    
-    manual_square_extractor = ManualSquareExtractor(img)    
+    manual_square_extractor = ManualSquareExtractor(img)
     plt.show()
