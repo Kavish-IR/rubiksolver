@@ -11,18 +11,18 @@ from sklearn.neighbors import KNeighborsClassifier
 
 cs = ['red','yellow','orange','white','blue','green']
 
-def reshape_images(training_images):
+def reshape_images(training_images, faces_per_image = 6):
     # Number of images and squares inside of them
     n_img = len(training_images)
-    n_squares = 9 * 6 * n_img
-    faces = np.zeros((6 * n_img, 150, 150, 3), dtype='uint8')
+    n_squares = 9 * faces_per_image * n_img
+    faces = np.zeros((faces_per_image * n_img, 150, 150, 3), dtype='uint8')
 
     for j, d in enumerate(training_images):
-        for i in range(6):    
+        for i in range(faces_per_image):    
             faces[n_img * i + j] = d[i,:,:,:]
 
     # generate training data
-    all_squares = [square for img in faces for clmn in np.hsplit(img, 3) for square in np.vsplit(clmn,3)]
+    all_squares = [square for img in faces for clmn in np.hsplit(np.flipud(img), 3) for square in np.vsplit(clmn,3)]
     all_square_means_rgb = [np.mean(square, axis = (0,1)) for square in all_squares]
     all_square_means_rgb = np.array(all_square_means_rgb).astype('uint8')
     all_square_means_yuv = cv.cvtColor(all_square_means_rgb.reshape(1, n_squares, 3), cv.COLOR_RGB2YUV)
@@ -69,9 +69,9 @@ def get_classifier():
 
     return clf_yuv
 
-def label_images(clf_yuv, images):
+def label_images(clf_yuv, images, faces_per_image = 6):
     # convert data into correct format
-    X_yuv = reshape_images(images)
+    X_yuv = reshape_images(images, faces_per_image)
 
     # predict
     pred_yuv  = clf_yuv.predict(X_yuv).astype('uint32')    

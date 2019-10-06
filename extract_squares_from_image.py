@@ -5,6 +5,7 @@ from scipy import spatial
 import numpy.random as rng
 import time
 import sys
+import os
 from manual_square_extractor import ManualSquareExtractor
 
 def capture_image(cap = None):
@@ -412,7 +413,7 @@ def extract_faces(img, squares):
             # Retain the result
             faces[50*i:50*(i+1), 50*j:50*(j+1)] = dst[0:50, 0:50].astype('uint8')
             
-    return np.flipud(faces)
+    return faces #np.flipud(faces)
 
 
 def plot_contours(contours, ax=None, color='g'):
@@ -694,7 +695,8 @@ def review_faces(captured_faces):
     
     for i in range(2):
         for j in range(3):
-            axs[i][j].imshow(np.flipud(captured_faces[3*i+j]))
+            #axs[i][j].imshow(np.flipud(captured_faces[3*i+j]))
+            axs[i][j].imshow(captured_faces[3*i+j])
     plt.draw()
 
     key_press = False
@@ -734,13 +736,53 @@ def capture_faces():
                 cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
             )
             plt.show()
-            faces = np.flip(manual_square_extractor.faces, 0)
+            #faces = np.flip(manual_square_extractor.faces, 0)
+            faces = manual_square_extractor.faces
+            
         captured_faces.append(np.copy(faces))
         
     return captured_faces, captured_imgs
 
 
+def capture_faces_from_images(input_imgs):
+    captured_imgs  = []
+    captured_faces = []
 
+    for img_rgb in input_imgs:
+        #img_bgr = cv.cvtColor(img_rgb, cv.COLOR_RGB2BGR)
+        img_bgr = img_rgb
+        captured_imgs.append(img_bgr)
+        
+        try:
+           faces, display_data = process_frame(img_bgr)
+        except:
+            manual_square_extractor = ManualSquareExtractor(
+                cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
+            )
+            plt.show()
+            #faces = np.flip(manual_square_extractor.faces, 0)
+            faces = manual_square_extractor.faces
+        captured_faces.append(np.copy(faces))
+        
+    return captured_faces, captured_imgs
+    
+
+def load_imgs(img_file_list):
+    input_imgs = []
+    
+    for input_file in img_file_list:
+        img_rgb = cv.imread(input_file, 3)
+        input_imgs.append(img_rgb)
+
+    return input_imgs
+
+def load_imgs_from_dir(img_dir):
+    img_file_list = [os.path.join(img_dir, f) for f in os.listdir(img_dir)
+                     if '.JPG' in f.upper()]
+    img_file_list.sort()
+    input_imgs = load_imgs(img_file_list)
+
+    return input_imgs
 
 def extract_cube_faces_from_stream():
     fig, axs = create_display_plot()
@@ -794,20 +836,6 @@ def extract_cube_faces_from_stream():
     cv.destroyAllWindows()
     return captured_faces, captured_imgs
 
-
-
-def extract_cube_faces_from_images(image_file_list):
-    plt.ion()
-    plt.show()
-    captured_faces = []
-    
-    for i, image_file in enumerate(image_file_list):
-        faces = extract_squares_from_image(input_file = image_file)[0]
-        captured_faces.append(faces)
-            
-    plt.ioff()    
-
-    return captured_faces
 
 if __name__ == '__main__':
     if len(sys.argv) <= 1:
