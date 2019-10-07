@@ -1,6 +1,7 @@
+import sys
+import numpy as np
 from extract_squares_from_image import extract_cube_faces_from_stream, capture_faces, load_imgs_from_dir, capture_faces_from_images
 from color_classifier import get_classifier, label_images
-import numpy as np
 from Cube import Cube
 from Solver import Solver
 from SolutionGallery import SolutionGallery
@@ -193,42 +194,47 @@ def check_images(captured_imgs, captured_faces, colors_cube, clf_yuv):
 
     return 
 
-#def main():
 
-#input_dir = '/home/publius/Documents/RubiksTest/TestImages/ShotAirport'
-#input_dir = '/home/publius/Documents/RubiksTest/TestImages/ShotTest'
+def main(input_dir = None):
 
-#input_imgs = load_imgs_from_dir(input_dir)
-#captured_faces, captured_imgs = capture_faces_from_images(input_imgs)
-captured_faces, captured_imgs = capture_faces()
-clf_yuv = get_classifier()
+    # Input  the faces of the Cube
+    if input_dir is None:        
+        captured_faces, captured_imgs = capture_faces()            
+    else:
+        input_imgs = load_imgs_from_dir(input_dir)
+        captured_faces, captured_imgs = capture_faces_from_images(input_imgs)
+    
 
-## OLD APPROACH
-#captured_faces[4] = np.swapaxes(captured_faces[4], 1, 0)
-#captured_faces[4] = np.flip(captured_faces[4], 0)
-#captured_faces[5] = np.swapaxes(captured_faces[5], 1, 0)
-#captured_faces[5] = np.flip(captured_faces[5], 1)
+    # Get the color classifier
+    clf_yuv = get_classifier()
 
-faces = np.array(captured_faces)
-pred_colors_yuv, pred_proba_yuv = label_images(clf_yuv, [faces])
-pred_colors_yuv2 = np.array(pred_colors_yuv).reshape((6,3,3))
+    # Predict the face colors from the input images
+    faces = np.array(captured_faces)
+    pred_colors_yuv, pred_proba_yuv = label_images(clf_yuv, [faces])
+    colors_cube = np.array(pred_colors_yuv).reshape((6,3,3))
 
-check_images(captured_imgs, captured_faces, pred_colors_yuv2, clf_yuv)
-plt.show()
+    # Inspect / adjust results if necessary. This step can modify pred_colors_yuv2.
+    check_images(captured_imgs, captured_faces, colors_cube, clf_yuv)
+    plt.show()
 
-c = Cube(pred_colors_yuv2)
-
-#c.cube_plot()
-#plt.show()
-
-# Solve and retain moves
-initial_state = c.export_state()
-s = Solver(c)
-s.solve()
-solve_moves = c.recorded_moves
-
-# Display the solution
-sg = SolutionGallery(initial_state, solve_moves)
-plt.show()
+    # Define the cube using the updated colors
+    c = Cube(colors_cube)
+    
+    # Solve and retain moves
+    initial_state = c.export_state()
+    s = Solver(c)
+    s.solve()
+    solve_moves = c.recorded_moves
+    
+    # Display the solution
+    sg = SolutionGallery(initial_state, solve_moves)
+    plt.show()
     
     
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        img_dir = sys.argv[1]
+        main(img_dir)
+    else:
+        main()
