@@ -194,6 +194,7 @@ class Cube:
 
     def stop_recorder(self):
         self.record_moves = False
+        self.simplify_recorded_moves()
 
     def flush_recorder(self):
         self.recorded_moves = []
@@ -201,6 +202,38 @@ class Cube:
     def record_move(self, move):
         if self.record_moves:
             self.recorded_moves.append(move)
+
+    def simplify_recorded_moves(self):
+        simple_list = []
+        
+        if len(self.recorded_moves) > 0:
+            simple_list.append(self.recorded_moves[0])
+
+        for i in range(1, len(self.recorded_moves)):    
+            if self.recorded_moves[i][-1] == simple_list[-1][-1]:
+                # extract the move direction
+                move_direction = simple_list[-1][-1]
+                
+                # compute the number of rotations for the combined moves
+                n_rot = (int(self.recorded_moves[i][:-1]) +
+                         int(simple_list[-1][:-1])) % 4
+
+                # 3 CW = 1 CCW rotation, 3 CCW = 1 CW rotation
+                if n_rot == 3:
+                    n_rot = -1
+                if n_rot == -3:
+                    n_rot = 1
+                    
+                # Change the last move to the updated combined move
+                simple_list[-1] = "{}{}".format(n_rot, move_direction)
+        
+            else:        
+                simple_list.append(self.recorded_moves[i])
+
+        simple_list = list(filter(lambda x: (int(x[:-1]) != 0), simple_list))
+        
+        self.recorded_moves = simple_list
+        
             
     def randomize_state(self, seed = None, n_moves=30):
         move_type = ['F', 'B', 'U', 'D', 'L', 'R', 'X', 'Y', 'Z']
