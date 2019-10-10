@@ -8,8 +8,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 
-
-cs = ['red','yellow','orange','white','blue','green']
+cs = ['white','red','yellow','orange','blue','green']
+training_data_folder = './training_data/'
 
 def reshape_images(training_images, faces_per_image = 6):
     # Number of images and squares inside of them
@@ -34,8 +34,7 @@ def reshape_images(training_images, faces_per_image = 6):
     
     return X_yuv 
 
-def get_training_images():
-    training_data_folder = '/home/publius/git-repositories/rubiks-solver/training_data/'
+def get_training_images():    
     training_data_files = [f for f in os.listdir(training_data_folder) 
                            if 'training_data' in f]
     training_images = []
