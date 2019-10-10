@@ -58,35 +58,35 @@ class Solver:
                 if not self.c.edge_piece_solved(ep_to_solve):
                     self.c.cube_plot(title_str = 'Something went wrong with the current edge piece.')
             
-            
+
     def solve_white_corners(self):        
         # White corner pieces:
         white_corner_pieces = self.c.corner_pieces_matching_color('white')
-        
-        # We will solve corners one-by-one clock-wise
-        for i in range(4):
-            pt_corner_to_solve = np.array([2, -2, 3], dtype='int')
-            colors_to_solve = [self.c.face_color('right'), self.c.face_color('front')]
 
+        for i in range(4):
+            # We are going to solve the right/front corner which has the following colors:
+            colors_to_solve = [self.c.face_color('right'), self.c.face_color('front')]
+            
             # identify the corner we need to send to the target_corner
             for piece_to_solve in white_corner_pieces:
                 if piece_to_solve.adjacent_color_names() == set(colors_to_solve):
                     break
-
+                
             # all points will move here
+            pt_corner_to_solve = np.array([2, -2, 3], dtype='int')            
             target_corner = set(['front', 'right', 'up'])
 
             # if already solved don't do anything
             if self.c.corner_piece_solved(piece_to_solve):
                 pass
-
+            
             # piece is unsolved, but in the target corner. this will move it to front,down,right position
             elif piece_to_solve.corner() == target_corner:
                 self.c.rotate_right(-1)
                 self.c.rotate_down(-1)
                 self.c.rotate_right(1)
                 self.c.rotate_down(1)
-
+                
             # piece is unsolved but in some other up corner. move it to front,down,right position
             elif 'up' in piece_to_solve.corner():
                 tmp = sorted(list(piece_to_solve.corner()))
@@ -108,14 +108,13 @@ class Solver:
             if 'down' in piece_to_solve.corner():
                 self.c.rotate_face_corner_to_corner('down', piece_to_solve.corner(), set(['front', 'right', 'down']))
 
-            #self.c.cube_plot(title_str="{0} prior to solve".format(i))
             # case that white is on front:
             if piece_to_solve.face_name == 'front':
                 self.c.rotate_down(-1)
                 self.c.rotate_right(-1)
                 self.c.rotate_down(1)
                 self.c.rotate_right(1)
-
+            
             # case that white is on right
             elif piece_to_solve.face_name == 'right':
                 self.c.rotate_right(-1)
@@ -132,13 +131,14 @@ class Solver:
                 self.c.rotate_down(-1)
                 self.c.rotate_right(1)
 
+            # Did something go wrong?
             if not self.c.corner_piece_solved(piece_to_solve):                
-                self.c.cube_plot(title_str = 'Something went wrong with the current corner piece.  {0}'.format(i))
-                
-            #self.c.cube_plot(title_str="{0} post solve".format(i))            
-            # rotate the cube for the next edge to solve
-            self.c.rotate_z(1)
+                self.c.cube_plot(title_str = 'Something went wrong with the current corner piece.')
+                plt.show()
 
+            # Rotate next face to the front
+            self.c.rotate_z(1)
+                
     def remove_middle_edge_piece(self, e):
         self.c.rotate_cube_face_to_face(e, 'front')
         self.c.rotate_up(1)
@@ -149,10 +149,11 @@ class Solver:
         self.c.rotate_front(-1)
         self.c.rotate_up(1)
         self.c.rotate_front(1)
-        self.c.rotate_cube_face_to_face('front', e)        
-            
+        self.c.rotate_cube_face_to_face('front', e)
+
     def solve_middle_edges(self):
-        self.c.rotate_x(2)
+        # Put white on bottom
+        self.c.rotate_cube_face_to_face(face_dict[self.c.center_piece_idx('white')[0]],'down')
 
         # We will solve corners one-by-one clock-wise
         for i in range(4):
@@ -199,7 +200,59 @@ class Solver:
                     self.c.rotate_front(-1)
                     self.c.rotate_cube_face_to_face('front', 'right')
                     
-                self.c.rotate_cube_face_to_face('right', 'front')
+            self.c.rotate_cube_face_to_face('right', 'front')
+        
+            
+    # def solve_middle_edges(self):
+    #     # Put white on bottom
+    #     self.c.rotate_cube_face_to_face(face_dict[self.c.center_piece_idx('white')[0]],'down')
+
+    #     # We will solve corners one-by-one clock-wise
+    #     for i in range(4):
+    #         colors_to_solve = [self.c.face_color('front'), self.c.face_color('right')]
+    #         ep_to_solve = self.c.edge_piece_matching_colors(colors_to_solve[0], colors_to_solve[1])
+            
+    #         if not self.c.edge_piece_solved(ep_to_solve):
+                
+    #             if 'up' not in ep_to_solve.edge():
+    #                 if ep_to_solve.edge() == set(['right', 'back']):
+    #                     self.remove_middle_edge_piece('right')
+    #                 elif ep_to_solve.edge() == set(['left', 'back']):
+    #                     self.remove_middle_edge_piece('back')
+    #                 elif ep_to_solve.edge() == set(['left', 'front']):
+    #                     self.remove_middle_edge_piece('left')
+    #                 elif ep_to_solve.edge() == set(['front', 'right']):
+    #                     self.remove_middle_edge_piece('front')
+                
+    #             if ep_to_solve.face_name == 'up':
+    #                 ep_to_solve = ep_to_solve.adj_pieces[0]
+    #             starting_edge = ep_to_solve.face_name
+
+    #             if ep_to_solve.color_name == self.c.face_color('front'):
+    #                 self.c.rotate_face_edge_to_edge('up', starting_edge, 'front')
+    #                 self.c.rotate_up(1)
+    #                 self.c.rotate_right(1)
+    #                 self.c.rotate_up(-1)
+    #                 self.c.rotate_right(-1)
+    #                 self.c.rotate_up(-1)
+    #                 self.c.rotate_front(-1)
+    #                 self.c.rotate_up(1)
+    #                 self.c.rotate_front(1)
+                    
+    #             elif ep_to_solve.color_name == self.c.face_color('right'):
+    #                 self.c.rotate_face_edge_to_edge('up', starting_edge, 'right')
+    #                 self.c.rotate_cube_face_to_face('right', 'front')
+    #                 self.c.rotate_up(-1)
+    #                 self.c.rotate_left(-1)
+    #                 self.c.rotate_up(1)
+    #                 self.c.rotate_left(1)
+    #                 self.c.rotate_up(1)
+    #                 self.c.rotate_front(1)
+    #                 self.c.rotate_up(-1)
+    #                 self.c.rotate_front(-1)
+    #                 self.c.rotate_cube_face_to_face('front', 'right')
+                    
+    #             self.c.rotate_cube_face_to_face('right', 'front')
     
     def solve_yellow_cross(self):
         yellow_edge_pieces = self.c.edge_pieces_matching_color('yellow')
