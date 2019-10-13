@@ -7,9 +7,11 @@ from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
+from joblib import dump, load
 
 cs = ['white','red','yellow','orange','blue','green']
 training_data_folder = './training_data/'
+pickled_model = './clf.joblib'
 
 def reshape_images(training_images, faces_per_image = 6):
     # Number of images and squares inside of them
@@ -61,10 +63,16 @@ def get_training_data():
     return X_yuv, clrs
 
 def get_classifier():
-    X_yuv, clrs = get_training_data()
-    
-    clf_yuv = svm.SVC(gamma='scale', kernel='poly', degree=5, probability=True)
-    clf_yuv.fit(X_yuv, clrs)
+    # if model is not trained, train and pickle for future use
+    if not os.path.exists(pickled_model):        
+        X_yuv, clrs = get_training_data()    
+        clf_yuv = svm.SVC(gamma='scale', kernel='poly', degree=5, probability=True)
+        clf_yuv.fit(X_yuv, clrs)
+        dump(clf_yuv, pickled_model)
+
+    # load pickled model
+    else:
+        clf_yuv = load(pickled_model)
 
     return clf_yuv
 
