@@ -7,11 +7,14 @@ from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
+
 from joblib import dump, load
+from config import training_data_dir, pickled_model
 
 cs = ['white','red','yellow','orange','blue','green']
-training_data_folder = './training_data/'
-pickled_model = './clf.joblib'
+#training_data_dir = './training_data/'
+#pickled_model = './clf.joblib'
+
 
 def reshape_images(training_images, faces_per_image = 6):
     # Number of images and squares inside of them
@@ -37,11 +40,11 @@ def reshape_images(training_images, faces_per_image = 6):
     return X_yuv 
 
 def get_training_images():    
-    training_data_files = [f for f in os.listdir(training_data_folder) 
+    training_data_files = [f for f in os.listdir(training_data_dir) 
                            if 'training_data' in f]
     training_images = []
     for f in training_data_files:
-        d = np.load("{0}/{1}".format(training_data_folder, f))    
+        d = np.load("{0}/{1}".format(training_data_dir, f))    
         training_images.append(d)
 
     return training_images
