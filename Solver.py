@@ -6,6 +6,7 @@ from Cube import *
 class Solver:
     def __init__(self, c):
         self.c = c
+        self.initial_state = self.c.export_state()        
 
     def white_face_to_top(self):
         f = face_dict[self.c.center_piece_idx('white')[0]]
@@ -491,6 +492,7 @@ class Solver:
                 self.permute_up_edge_pieces('CW')                
 
     def solve(self):
+        self.initial_state = self.c.export_state()
         self.c.flush_recorder()        
         self.c.start_recorder()
         self.solve_white_cross()
@@ -503,6 +505,7 @@ class Solver:
         self.c.stop_recorder()
 
     def solve_and_plot_after_steps(self):
+        self.initial_state = self.c.export_state()        
         self.c.flush_recorder()        
         self.c.start_recorder()
         self.c.cube_plot(title_str = 'initial state')        
