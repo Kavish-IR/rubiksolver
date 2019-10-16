@@ -6,7 +6,9 @@ from Cube import *
 class Solver:
     def __init__(self, c):
         self.c = c
-        self.initial_state = self.c.export_state()        
+        self.initial_state = self.c.export_state()
+        self.recorded_moves = []
+        self.solve_moves = []
 
     def white_face_to_top(self):
         f = face_dict[self.c.center_piece_idx('white')[0]]
@@ -503,6 +505,9 @@ class Solver:
         self.position_yellow_corners()
         self.solve_yellow_edges()
         self.c.stop_recorder()
+        self.solve_moves = self.c.recorded_moves[:]
+        self.recorded_moves = self.solve_moves
+        
 
     def solve_and_plot_after_steps(self):
         self.initial_state = self.c.export_state()        
@@ -523,7 +528,9 @@ class Solver:
         self.c.cube_plot(title_str = 'after positioning yellow corners')
         self.solve_yellow_edges()
         self.c.cube_plot(title_str = 'after permuting yellow edges')
-        self.c.stop_recorder()        
+        self.c.stop_recorder()
+        self.solve_moves = self.c.recorded_moves[:]
+        self.recorded_moves = self.solve_moves
             
 if __name__ == '__main__':
     c = Cube()    

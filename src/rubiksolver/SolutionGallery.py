@@ -73,8 +73,7 @@ if __name__ == '__main__':
     # Solve and retain moves
     s = Solver(c)
     s.solve()
-    solve_moves = c.recorded_moves
 
     # Display the solution
-    sg = SolutionGallery(initial_state, solve_moves)
+    sg = SolutionGallery(s.initial_state, s.solve_moves)
     sg.show()
