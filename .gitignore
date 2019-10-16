@@ -8,3 +8,9 @@ __pycache__
 
 ## Ignore the pickled model
 clf.joblib
+
+## Ignore build files
+build
+
+## Ignore junk files
+junk
