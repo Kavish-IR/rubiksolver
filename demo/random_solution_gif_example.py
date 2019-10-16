@@ -1,4 +1,4 @@
-from Solver import *
+from rubiksolver import *
 import copy
 
 c = Cube()

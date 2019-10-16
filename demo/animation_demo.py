@@ -1,5 +1,4 @@
-from Solver import *
-from Cube   import *
+from rubiksolver import *
 
 # Fresh cube, set to random state:
 c = Cube()
