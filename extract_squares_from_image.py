@@ -6,7 +6,7 @@ import numpy.random as rng
 import time
 import sys
 import os
-from manual_square_extractor import ManualSquareExtractor
+from ManualSquareExtractor import ManualSquareExtractor
 
 def capture_image(cap = None):
     if cap is None:

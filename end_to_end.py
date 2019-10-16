@@ -12,7 +12,7 @@ from matplotlib.patches import Rectangle
 from matplotlib.image import AxesImage
 from matplotlib import get_backend
 import cv2 as cv
-from manual_square_extractor import ManualSquareExtractor
+from ManualSquareExtractor import ManualSquareExtractor
 
 
 class ClickableRectangle:
