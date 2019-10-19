@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name="rubiksolver",
@@ -7,6 +7,11 @@ setup(
     author="Paul Kepley",
     author_email="pakepley@gmail.com",
     url="https://github.com/pkepley/rubiksolver",
-    package_dir = {'' : 'src'},
-    packages=['rubiksolver']
+    #package_dir = {'' : 'src'},    
+    packages=find_packages('src'),
+    package_dir={'' : 'src'},
+    package_data={
+        'rubiksolver' : ['training_data/*.npy']
+    },
+    include_package_data=True   
 )

@@ -11,6 +11,8 @@ clf.joblib
 
 ## Ignore build files
 build
+rubiksolver.egg-info
+dist
 
 ## Ignore junk files
 junk
