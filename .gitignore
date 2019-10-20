@@ -16,3 +16,6 @@ dist
 
 ## Ignore junk files
 junk
+
+## Ignore README.html from emacs markdown preview
+README.html
