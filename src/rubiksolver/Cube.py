@@ -531,10 +531,10 @@ class Cube:
         idx_list = [idx for idx in idx_center_pieces if self.pieces_cube[idx].color_name == color_name]
         return idx_list[0]        
         
-    def edge_piece_idx(self, c):
+    def edge_piece_idx(self, color_name):
         return [idx for idx in idx_edge_pieces if self.pieces_cube[idx].color_name == color_name]
     
-    def corner_piece_idx(self, c):
+    def corner_piece_idx(self, color_name):
         return [idx for idx in idx_corner_pieces if self.pieces_cube[idx].color_name == color_name]
                     
     def edge_piece_solved(self, pc):
