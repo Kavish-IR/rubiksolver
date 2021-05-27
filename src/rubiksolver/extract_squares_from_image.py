@@ -8,7 +8,8 @@ import sys
 import os
 from ManualSquareExtractor import ManualSquareExtractor
 
-def capture_image(cap = None):
+
+def capture_image(cap=None):
     if cap is None:
         cap = cv.VideoCapture(0)
 
@@ -18,61 +19,65 @@ def capture_image(cap = None):
     cv.imshow('Input Stream', frame)
 
     # Bring camera feed to front
-    cv.setWindowProperty('Input Stream', cv.WND_PROP_FULLSCREEN, cv.WINDOW_FULLSCREEN)
-    cv.setWindowProperty('Input Stream', cv.WND_PROP_FULLSCREEN, cv.WINDOW_NORMAL)
-    
+    cv.setWindowProperty(
+        'Input Stream', cv.WND_PROP_FULLSCREEN, cv.WINDOW_FULLSCREEN)
+    cv.setWindowProperty(
+        'Input Stream', cv.WND_PROP_FULLSCREEN, cv.WINDOW_NORMAL)
+
     while(True):
         ret, frame = cap.read()
 
         # Show the frame capture
         cv.imshow('Input Stream', frame)
-        
+
         # Handle Key Presses
         key_press = cv.waitKey(1)
-        
+
         # Take a picture if space is pressed
         if key_press % 256 == 32:
             retake_image = 0
-            exit_program = 0            
+            exit_program = 0
             break
 
         # Retake last image
         if key_press % 0xFF == ord('r'):
             retake_image = 1
-            exit_program = 0            
+            exit_program = 0
             break
-        
+
         # Quit the program if q is pressed
         if key_press & 0xFF == ord('q'):
             retake_image = 0
-            exit_program = 1            
+            exit_program = 1
             break
-        
+
     return frame, retake_image, exit_program
 
 
 def hipass_filter_img(img):
     ksize = 21
-    blur = cv.GaussianBlur(img, (ksize,ksize), 0)
+    blur = cv.GaussianBlur(img, (ksize, ksize), 0)
     img_highpass = img - blur
     img_highpass = cv.medianBlur(img_highpass, 5)
-    
+
     return img_highpass
 
 
 def filter_regions(img_thresh):
     ret, markers = cv.connectedComponents(img_thresh, connectivity=4)
     max_marker = np.max(markers.flatten())
-    marker_counts, bins = np.histogram(markers.flatten(), bins = np.arange(max_marker+1))
-    
+    marker_counts, bins = np.histogram(
+        markers.flatten(), bins=np.arange(max_marker+1))
+
     for i in range(len(marker_counts)):
         if i < len(marker_counts) - 1:
             if marker_counts[i] < 100:
                 markers[markers == i] = 0
         else:
             markers[markers >= i] = 0
-            
-    marker_counts,_ = np.histogram(markers.flatten(), bins = np.arange(max_marker+1))
+
+    marker_counts, _ = np.histogram(
+        markers.flatten(), bins=np.arange(max_marker+1))
     j = 0
     for i in range(len(marker_counts)):
         if marker_counts[i] > 0:
@@ -85,8 +90,9 @@ def filter_regions(img_thresh):
 def contiguous_regions(img_thresh):
     ret, markers = cv.connectedComponents(255 - img_thresh, connectivity=8)
     max_marker = np.max(markers.flatten())
-    marker_counts, bins = np.histogram(markers.flatten(), bins = np.arange(max_marker+1))
-    
+    marker_counts, bins = np.histogram(
+        markers.flatten(), bins=np.arange(max_marker+1))
+
     for i in range(len(marker_counts)):
         if i < len(marker_counts) - 1:
             if marker_counts[i] < 10 * 10:
@@ -95,8 +101,9 @@ def contiguous_regions(img_thresh):
                 markers[markers == i] = 0
         else:
             markers[markers >= i] = 0
-            
-    marker_counts,_ = np.histogram(markers.flatten(), bins = np.arange(max_marker+1))
+
+    marker_counts, _ = np.histogram(
+        markers.flatten(), bins=np.arange(max_marker+1))
     j = 0
     for i in range(len(marker_counts)):
         if marker_counts[i] > 0:
@@ -105,24 +112,27 @@ def contiguous_regions(img_thresh):
 
     return markers
 
+
 def fill_internal_holes(marked_region):
     # https://www.learnopencv.com/filling-holes-in-an-image-using-opencv-python-c/
     marked_region_ff = marked_region.copy()
-    h,w = marked_region_ff.shape[:2]
+    h, w = marked_region_ff.shape[:2]
     mask = np.zeros((h+2, w+2), np.uint8)
-    cv.floodFill(marked_region_ff, mask, (0,0), 255)
+    cv.floodFill(marked_region_ff, mask, (0, 0), 255)
     marked_region_ff_inv = cv.bitwise_not(marked_region_ff)
     marked_region_out = marked_region | marked_region_ff_inv
-    
+
     return marked_region_out
-   
+
+
 def markers_to_quad_j(markers, j):
     marked_region = np.where(markers == j, 255, 0).astype('uint8')
     marked_region2 = fill_internal_holes(marked_region)
 
     # Get contours
-    cnts, _ = cv.findContours(marked_region2.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-    cnts    = sorted(cnts, key=cv.contourArea, reverse=True)
+    cnts, _ = cv.findContours(marked_region2.copy(),
+                              cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
+    cnts = sorted(cnts, key=cv.contourArea, reverse=True)
 
     # Convex hulls
     hulls = [cv.convexHull(c, False) for c in cnts]
@@ -135,34 +145,35 @@ def markers_to_quad_j(markers, j):
     peris = []
     for c in hulls:
         peri = cv.arcLength(c, True)
-        approx = cv.approxPolyDP(c, epsilon = 0.1 * peri, closed = True)
+        approx = cv.approxPolyDP(c, epsilon=0.1 * peri, closed=True)
         deg = len(approx)
-        
+
         if deg == 4 and peri < 4 * 85:
             area = cv.contourArea(approx)
-            peri = cv.arcLength(approx, True)            
+            peri = cv.arcLength(approx, True)
             peris.append(peri)
             areas.append(area)
             quads.append(approx)
-           
+
     # get the quadrilateral with the largest area
     if quads:
         quad = quads[areas.index(max(areas))]
     else:
         quad = []
-        
+
     return quad, marked_region2
+
 
 def markers_to_quads(markers):
     max_marker = np.max(markers)
     quads = []
     marked_regions2 = []
-    
+
     for j in range(max_marker):
         quad, m = markers_to_quad_j(markers, j)
-        
+
         if len(quad) > 0:
-            quads.append(quad.squeeze())        
+            quads.append(quad.squeeze())
             marked_regions2.append(m)
 
     mm = np.zeros_like(markers)
@@ -171,70 +182,74 @@ def markers_to_quads(markers):
 
     return quads, mm
 
+
 def is_likely_square(quad):
     ps = np.squeeze(quad)
-    vs = np.zeros((4,2))
-    ls = np.zeros((4,1))
+    vs = np.zeros((4, 2))
+    ls = np.zeros((4, 1))
 
     for i in range(4):
-        vs[i, :] = ps[(i+1)%4, :] - ps[i,:]
-        ls[i] = np.linalg.norm(vs[i,:])
+        vs[i, :] = ps[(i+1) % 4, :] - ps[i, :]
+        ls[i] = np.linalg.norm(vs[i, :])
 
     ratio = np.std(ls) / np.mean(ls)
-    
+
     return ratio < .10
+
 
 def reorder_square(square):
     mean = np.mean(square, axis=0)
     delta = square - mean
-    angles = np.arctan2(delta[:,1], delta[:,0]).reshape(4,1)
-    angles = (360 / (2*np.pi)) * np.mod(angles,2*np.pi)
-    
+    angles = np.arctan2(delta[:, 1], delta[:, 0]).reshape(4, 1)
+    angles = (360 / (2*np.pi)) * np.mod(angles, 2*np.pi)
+
     square = np.append(square, angles, axis=1)
-    square = square[square[:,2].argsort()]
-    square = square[:,0:2].astype('int32')
+    square = square[square[:, 2].argsort()]
+    square = square[:, 0:2].astype('int32')
 
     return square
 
 
 def filter_by_area(squares):
     n_sq = len(squares)
-    
+
     # Re-order squares by area
-    squares = sorted(squares, key=cv.contourArea, reverse=False)    
-    square_areas   = np.array([cv.contourArea(sq) for sq in squares])
+    squares = sorted(squares, key=cv.contourArea, reverse=False)
+    square_areas = np.array([cv.contourArea(sq) for sq in squares])
     area_excl_mean = np.zeros(n_sq)
 
     # List of indices for squares which we exclude because their
     # area is too large / too small relative to the median of the
     # other remaining squares
     excl_list = []
-    
+
     for i in range(n_sq):
         idxs = [k for k in range(n_sq) if k not in excl_list and k != i]
-        area_median_excl_i  = np.median(square_areas[idxs])
-        ratio = square_areas[i] /  area_median_excl_i
-        
+        area_median_excl_i = np.median(square_areas[idxs])
+        ratio = square_areas[i] / area_median_excl_i
+
         if ratio > 1.3 or ratio < 0.7:
             excl_list.append(i)
-        
+
     return [squares[i] for i in range(n_sq) if i not in excl_list]
 
 
 def square_orientation(square):
-    horiz = 0.5 * ( (square[0,:] - square[1,:]) + (square[3,:] - square[2,:]) )
-    vert  = 0.5 * ( (square[3,:] - square[0,:]) + (square[2,:] - square[1,:]) )
-    axes = np.zeros((2,2))
-    axes[:,0] = horiz
-    axes[:,1] = vert
+    horiz = 0.5 * ((square[0, :] - square[1, :]) +
+                   (square[3, :] - square[2, :]))
+    vert = 0.5 * ((square[3, :] - square[0, :]) +
+                  (square[2, :] - square[1, :]))
+    axes = np.zeros((2, 2))
+    axes[:, 0] = horiz
+    axes[:, 1] = vert
     return axes
-    
+
 
 def aligned_axes(squares):
-    n_sq = len(squares)#square_axes.shape[0]
+    n_sq = len(squares)  # square_axes.shape[0]
 
-    # Deal with alignment 
-    square_axes  = np.array([square_orientation(sq) for sq in squares])
+    # Deal with alignment
+    square_axes = np.array([square_orientation(sq) for sq in squares])
     square_axes = square_axes.reshape(n_sq, 4)
 
     # Average
@@ -247,9 +262,9 @@ def aligned_axes(squares):
 
 def recoordinatize(squares, quads):
     n_squares = len(squares)
-    
+
     # Compute the square means, and average them to get an origin
-    square_means = np.array([np.mean(ps, axis=0).squeeze() for ps in squares])    
+    square_means = np.array([np.mean(ps, axis=0).squeeze() for ps in squares])
     origin = np.mean(square_means, axis=0)
 
     # Displace the square means
@@ -259,28 +274,29 @@ def recoordinatize(squares, quads):
     x_ax_avg, y_ax_avg = aligned_axes(squares)
     x_ax_norm = np.linalg.norm(x_ax_avg)
     y_ax_norm = np.linalg.norm(y_ax_avg)
-    avg_ax_norm   = 0.5 * (x_ax_norm + y_ax_norm)
+    avg_ax_norm = 0.5 * (x_ax_norm + y_ax_norm)
 
     # Get orthogonal directions
     u_dir = x_ax_avg / x_ax_norm
     v_dir = np.array([-u_dir[1], u_dir[0]])
-    basis = np.array( [u_dir, v_dir ]).T
+    basis = np.array([u_dir, v_dir]).T
 
     # Coordinatize the displaced means
     uv_means = np.dot(displaced_square_means, basis)
-    u_means = sorted(uv_means[:,0])
-    v_means = sorted(uv_means[:,1])
+    u_means = sorted(uv_means[:, 0])
+    v_means = sorted(uv_means[:, 1])
 
     # Identify jumps in u coordinates - clusters
     u_jump_idx = [0]
     for i in range(1, n_squares):
         jump = (u_means[i] - u_means[i-1]) / avg_ax_norm
         if jump > .6:
-            u_jump_idx.append(i)                        
+            u_jump_idx.append(i)
     u_jump_idx.append(n_squares)
 
     # Get the means within each u cluster
-    u_cluster_means = [ np.mean( u_means[u_jump_idx[i-1] : u_jump_idx[i]]) for i in range(1, len(u_jump_idx))]
+    u_cluster_means = [np.mean(u_means[u_jump_idx[i-1]: u_jump_idx[i]])
+                       for i in range(1, len(u_jump_idx))]
     u_cluster_means = np.array(u_cluster_means)
 
     # Identify jumps in v coordinates - clusters
@@ -288,11 +304,12 @@ def recoordinatize(squares, quads):
     for i in range(1, n_squares):
         jump = (v_means[i] - v_means[i-1]) / avg_ax_norm
         if jump > .6:
-            v_jump_idx.append(i)                        
+            v_jump_idx.append(i)
     v_jump_idx.append(n_squares)
 
     # Get the means within each v cluster
-    v_cluster_means = [ np.mean( v_means[v_jump_idx[i-1] : v_jump_idx[i]]) for i in range(1, len(v_jump_idx))]
+    v_cluster_means = [np.mean(v_means[v_jump_idx[i-1]: v_jump_idx[i]])
+                       for i in range(1, len(v_jump_idx))]
     v_cluster_means = np.array(v_cluster_means)
 
     # Scale the cluster means by the face length
@@ -305,41 +322,48 @@ def recoordinatize(squares, quads):
 
     if len(u_cluster_means) < 3 or len(v_cluster_means) < 3:
         # Compute the square means
-        quad_means = np.array([np.mean(ps, axis=0).squeeze() for ps in quads])    
+        quad_means = np.array([np.mean(ps, axis=0).squeeze() for ps in quads])
         displaced_quad_means = quad_means - origin
         uv_means_quads = np.dot(displaced_quad_means, basis)
-        u_means_quads  = uv_means_quads[:,0]
-        v_means_quads  = uv_means_quads[:,1]
+        u_means_quads = uv_means_quads[:, 0]
+        v_means_quads = uv_means_quads[:, 1]
 
         if len(u_cluster_means) == 2:
             # if the means are far apart, we're missing the middle column
             if u_cluster_means_scaled_diff[0] > 1.5:
                 u_cluster_means = list(u_cluster_means)
-                u_cluster_means.insert(1, 0.5 * (u_cluster_means[0] + u_cluster_means[1]))
+                u_cluster_means.insert(
+                    1, 0.5 * (u_cluster_means[0] + u_cluster_means[1]))
                 u_cluster_means = np.array(u_cluster_means)
 
             # if the means are close, we're missing either left or right
             else:
-                right_candidate_pos = np.max(u_cluster_means) + (1.3 * x_ax_norm)
-                left_candidate_pos  = np.min(u_cluster_means) - (1.3 * x_ax_norm)
+                right_candidate_pos = np.max(
+                    u_cluster_means) + (1.3 * x_ax_norm)
+                left_candidate_pos = np.min(
+                    u_cluster_means) - (1.3 * x_ax_norm)
 
-                scaled_dist_to_right_cand = [abs(right_candidate_pos - uu) / x_ax_norm for uu in u_means_quads]
-                scaled_dist_to_left_cand  = [abs(left_candidate_pos - uu)  / x_ax_norm for uu in u_means_quads]
+                scaled_dist_to_right_cand = [
+                    abs(right_candidate_pos - uu) / x_ax_norm for uu in u_means_quads]
+                scaled_dist_to_left_cand = [
+                    abs(left_candidate_pos - uu) / x_ax_norm for uu in u_means_quads]
 
                 right_min_scaled_dist = min(scaled_dist_to_right_cand)
-                left_min_scaled_dist  = min(scaled_dist_to_left_cand)                
-                
+                left_min_scaled_dist = min(scaled_dist_to_left_cand)
+
                 if min(scaled_dist_to_right_cand) < .1 and right_min_scaled_dist < left_min_scaled_dist:
-                    right_idx = scaled_dist_to_right_cand.index(right_min_scaled_dist)
+                    right_idx = scaled_dist_to_right_cand.index(
+                        right_min_scaled_dist)
                     u_candid = u_means_quads[right_idx]
                     u_cluster_means = list(u_cluster_means)
                     u_cluster_means.append(u_candid)
                     u_cluster_means = np.array(u_cluster_means)
-                    
+
                 elif min(scaled_dist_to_left_cand) < .1:
-                    left_idx = scaled_dist_to_left_cand.index(left_min_scaled_dist)
+                    left_idx = scaled_dist_to_left_cand.index(
+                        left_min_scaled_dist)
                     u_candid = u_means_quads[left_idx]
-                    u_cluster_means = list(u_cluster_means)                                        
+                    u_cluster_means = list(u_cluster_means)
                     u_cluster_means.insert(0, u_candid)
                     u_cluster_means = np.array(u_cluster_means)
 
@@ -347,37 +371,43 @@ def recoordinatize(squares, quads):
             # if the means are far apart, we're missing the middle column
             if v_cluster_means_scaled_diff[0] > 1.5:
                 v_cluster_means = list(v_cluster_means)
-                v_cluster_means.insert(1, 0.5 * (v_cluster_means[0] + v_cluster_means[1]))
+                v_cluster_means.insert(
+                    1, 0.5 * (v_cluster_means[0] + v_cluster_means[1]))
                 v_cluster_means = np.array(v_cluster_means)
 
             # if the means are close, we're missing either top or bottom
             else:
-                up_candidate_pos   = np.max(v_cluster_means) + (1.3 * y_ax_norm)
-                down_candidate_pos = np.min(v_cluster_means) - (1.3 * y_ax_norm)
+                up_candidate_pos = np.max(v_cluster_means) + (1.3 * y_ax_norm)
+                down_candidate_pos = np.min(
+                    v_cluster_means) - (1.3 * y_ax_norm)
 
-                scaled_dist_to_up_cand   = [abs(up_candidate_pos - vv) / y_ax_norm for vv in v_means_quads]
-                scaled_dist_to_down_cand = [abs(down_candidate_pos  - vv) / y_ax_norm for vv in v_means_quads]
+                scaled_dist_to_up_cand = [
+                    abs(up_candidate_pos - vv) / y_ax_norm for vv in v_means_quads]
+                scaled_dist_to_down_cand = [
+                    abs(down_candidate_pos - vv) / y_ax_norm for vv in v_means_quads]
 
                 up_min_scaled_dist = min(scaled_dist_to_up_cand)
-                down_min_scaled_dist  = min(scaled_dist_to_down_cand)                
-                
+                down_min_scaled_dist = min(scaled_dist_to_down_cand)
+
                 if min(scaled_dist_to_up_cand) < .1 and up_min_scaled_dist < down_min_scaled_dist:
                     up_idx = scaled_dist_to_up_cand.index(up_min_scaled_dist)
                     v_candid = v_means_quads[up_idx]
                     v_cluster_means = list(v_cluster_means)
                     v_cluster_means.append(v_candid)
                     v_cluster_means = np.array(v_cluster_means)
-                    
+
                 elif min(scaled_dist_to_down_cand) < .1:
-                    down_idx = scaled_dist_to_down_cand.index(down_min_scaled_dist)
+                    down_idx = scaled_dist_to_down_cand.index(
+                        down_min_scaled_dist)
                     v_candid = v_means_quads[down_idx]
-                    v_cluster_means = list(v_cluster_means)                                        
+                    v_cluster_means = list(v_cluster_means)
                     v_cluster_means.insert(0, v_candid)
                     v_cluster_means = np.array(v_cluster_means)
 
     # grid of cluster means
     uv_cluster_means = np.meshgrid(u_cluster_means, v_cluster_means)
-    uv_cluster_means = np.array(list(zip(uv_cluster_means[0].flatten(), uv_cluster_means[1].flatten())))
+    uv_cluster_means = np.array(
+        list(zip(uv_cluster_means[0].flatten(), uv_cluster_means[1].flatten())))
 
     # Recoodinatize the cluster means back to original coordinates
     cluster_means_out = np.dot(uv_cluster_means, basis.T) + origin
@@ -385,11 +415,11 @@ def recoordinatize(squares, quads):
     # Generate squares about the recoodinatized cluster means
     squares_out = []
     for uv_cntr in uv_cluster_means:
-        s = np.zeros((4,2))
-        s[0,:] = uv_cntr + 0.45 * avg_ax_norm * np.array([-1, 1])
-        s[1,:] = uv_cntr + 0.45 * avg_ax_norm * np.array([ 1 ,1])
-        s[2,:] = uv_cntr + 0.45 * avg_ax_norm * np.array([ 1,-1])
-        s[3,:] = uv_cntr + 0.45 * avg_ax_norm * np.array([-1,-1])
+        s = np.zeros((4, 2))
+        s[0, :] = uv_cntr + 0.45 * avg_ax_norm * np.array([-1, 1])
+        s[1, :] = uv_cntr + 0.45 * avg_ax_norm * np.array([1, 1])
+        s[2, :] = uv_cntr + 0.45 * avg_ax_norm * np.array([1, -1])
+        s[3, :] = uv_cntr + 0.45 * avg_ax_norm * np.array([-1, -1])
         s = np.dot(s, basis.T) + origin
         squares_out.append(s)
 
@@ -397,23 +427,24 @@ def recoordinatize(squares, quads):
 
 
 def extract_faces(img, squares):
-    rows,cols,ch = img.shape
+    rows, cols, ch = img.shape
     faces = np.zeros((3 * 50, 3 * 50, ch), dtype='uint8')
-    
+
     for i in range(3):
         for j in range(3):
             imgcp = np.copy(img)
 
             # Map squares to a reference square
             pts1 = squares[3 * i + j].astype('float32')
-            pts2 = np.float32([[0,50], [50,50], [50, 0], [0,0]])
+            pts2 = np.float32([[0, 50], [50, 50], [50, 0], [0, 0]])
             M = cv.getPerspectiveTransform(pts1, pts2)
             dst = cv.warpPerspective(imgcp, M, (cols, rows))
 
             # Retain the result
-            faces[50*i:50*(i+1), 50*j:50*(j+1)] = dst[0:50, 0:50].astype('uint8')
-            
-    return faces #np.flipud(faces)
+            faces[50*i:50*(i+1), 50*j:50*(j+1)] = dst[0:50,
+                                                      0:50].astype('uint8')
+
+    return faces  # np.flipud(faces)
 
 
 def plot_contours(contours, ax=None, color='g'):
@@ -423,31 +454,33 @@ def plot_contours(contours, ax=None, color='g'):
     for c in contours:
         n_pts = len(c)
         c = np.squeeze(c)
-        for i in range(0,n_pts):
-            p_0 = c[i,:].flatten()
-            p_1 = c[(i+1)%n_pts,:].flatten()
-            ax.plot(np.array([p_0[0], p_1[0]]), np.array([p_0[1], p_1[1]]), c=color)
+        for i in range(0, n_pts):
+            p_0 = c[i, :].flatten()
+            p_1 = c[(i+1) % n_pts, :].flatten()
+            ax.plot(np.array([p_0[0], p_1[0]]),
+                    np.array([p_0[1], p_1[1]]), c=color)
 
-            
+
 def process_frame(img_bgr):
     # Convert to RGB and rescale
     img = cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
     nx, ny = img.shape[1], img.shape[0]
     nx_in, ny_in = img.shape[1], img.shape[0]
     nx, ny = 256, int(ny_in * (256.0 / nx_in))
-    img = cv.resize(img, (nx,ny))
+    img = cv.resize(img, (nx, ny))
 
     # High-pass filter the image
     img_filtered = hipass_filter_img(img)
     img_filtered_gray = cv.cvtColor(img_filtered, cv.COLOR_RGB2GRAY)
-    
+
     # Threshold the high-pass filtered image
-    ret, img_thresh = cv.threshold(img_filtered_gray, 127, 255, cv.THRESH_BINARY)
+    ret, img_thresh = cv.threshold(
+        img_filtered_gray, 127, 255, cv.THRESH_BINARY)
 
     # Close image
-    kernel = np.ones((3,3), np.uint8)
+    kernel = np.ones((3, 3), np.uint8)
     img_close = cv.morphologyEx(img_thresh, cv.MORPH_CLOSE, kernel)
-    
+
     # Filter regions by size to remove some noise from thresholded img
     #markers = filter_regions(img_thresh)
     markers = filter_regions(img_close)
@@ -455,7 +488,7 @@ def process_frame(img_bgr):
     img_thresh2 = img_thresh2.astype(np.uint8)
 
     # Dilate image
-    kernel = np.ones((3,3), np.uint8)
+    kernel = np.ones((3, 3), np.uint8)
     img_dilate = cv.dilate(img_thresh2, kernel, iterations=1)
 
     # Split dilated image into contiguous regions
@@ -469,49 +502,53 @@ def process_frame(img_bgr):
     squares = list(filter(is_likely_square, quads))
     squares = [reorder_square(s) for s in squares]
     square_means = np.array([np.mean(ps, axis=0).squeeze() for ps in squares])
-    
+
     # Filter squares by area
     filtered_squares = filter_by_area(squares)
-    filtered_square_means = np.array([np.mean(ps, axis=0).squeeze() for ps in filtered_squares])
-    
+    filtered_square_means = np.array(
+        [np.mean(ps, axis=0).squeeze() for ps in filtered_squares])
+
     # Orientation?
     x_ax_avg, y_ax_avg = aligned_axes(filtered_squares)
 
     # Recoordinatize
-    recoord_square_means, recoord_squares = recoordinatize(filtered_squares, quads)
+    recoord_square_means, recoord_squares = recoordinatize(
+        filtered_squares, quads)
 
     # Extract faces
     faces = extract_faces(img, recoord_squares)
 
     # All demo display data
-    display_data = {'img' : img, 'img_filtered' : img_filtered, 'img_filtered_gray' : img_filtered_gray,
-                    'img_thresh' : img_thresh,  'img_close' : img_close, 'img_thresh2' : img_thresh2,
-                    'img_dilate' : img_dilate,  'markers' : markers, 'quads' : quads, 'quad_means' : quad_means,
-                    'squares' : squares, 'square_means' : square_means, 'filtered_squares' : filtered_squares,
-                    'filtered_square_means' : filtered_square_means, 'recoord_squares' : recoord_squares,
-                    'recoord_square_means' : recoord_square_means, 'faces' : faces}
-    
+    display_data = {'img': img, 'img_filtered': img_filtered, 'img_filtered_gray': img_filtered_gray,
+                    'img_thresh': img_thresh,  'img_close': img_close, 'img_thresh2': img_thresh2,
+                    'img_dilate': img_dilate,  'markers': markers, 'quads': quads, 'quad_means': quad_means,
+                    'squares': squares, 'square_means': square_means, 'filtered_squares': filtered_squares,
+                    'filtered_square_means': filtered_square_means, 'recoord_squares': recoord_squares,
+                    'recoord_square_means': recoord_square_means, 'faces': faces}
+
     return faces, display_data
 
 
 def create_display_plot():
-    # Plot the result 
-    n_plot   = 3
-    m_plot   = 5
+    # Plot the result
+    n_plot = 3
+    m_plot = 5
     fig, axs = plt.subplots(n_plot, m_plot, figsize=(5 * m_plot, 5 * n_plot))
     clear_plot_axes(axs)
-    
+
     return fig, axs
+
 
 def clear_plot_axes(axs):
     # Turn off ticks on all plots
     for ax_row in axs:
         for ax in ax_row:
             ax.clear()
-            ax.set_xticks([],[])
-            ax.set_yticks([],[])
-    
-def display_result(display_data, axs = None):
+            ax.set_xticks([], [])
+            ax.set_yticks([], [])
+
+
+def display_result(display_data, axs=None):
     if axs is None:
         fig, axs = create_display_plot()
 
@@ -520,145 +557,147 @@ def display_result(display_data, axs = None):
 
     # Clear existing plots
     clear_plot_axes(axs)
-            
+
     # Plot original
     i_plot = 0
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot]
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(display_data['img'])
     ax.set_title('img')
-    
+
     # Plot filtered image
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]   
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(255 - display_data['img_filtered'])
     ax.set_title('img_filtered')
 
     # Plot grayscale version of filtered image
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]       
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(display_data['img_filtered_gray'], cmap='Greys')
     ax.set_title('img_filtered_gray')
-    
+
     # Plot thresholded grayscale image
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]       
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(display_data['img_thresh'], cmap='Greys')
     ax.set_title('img_thresh')
 
     # Plot morphological closure of grayscale image
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]           
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(display_data['img_thresh'], cmap='Greys')
     ax.set_title('img_close')
 
     # Plot threshold of morphological closure image
-    i_plot += 1    
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]               
+    i_plot += 1
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(display_data['img_thresh2'], cmap='Greys')
     ax.set_title('img_thresh2')
 
     # Dilate the thresholded image to close up holes
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ] 
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(display_data['img_dilate'], cmap='Greys')
     ax.set_title('img_dilate')
 
     # Plot the connected components of the last image
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ] 
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(display_data['markers'], cmap='jet')
     ax.set_title('markers')
 
     # Plot the boundaries of regions whose convex hulls are
     # approximately quadrilateral
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]     
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(np.zeros_like(display_data['img']), cmap='Greys')
     plot_contours(display_data['quads'], ax=ax, color='w')
-    ax.scatter(display_data['quad_means'][:,0],
-               display_data['quad_means'][:,1], c='r')
+    ax.scatter(display_data['quad_means'][:, 0],
+               display_data['quad_means'][:, 1], c='r')
     ax.set_title('quads')
 
     # Plot the boundaries of regions whos convex hulls are
     # approximately squares
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]     
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(np.zeros_like(display_data['img']), cmap='Greys')
     plot_contours(display_data['squares'], ax=ax, color='w')
-    ax.scatter(display_data['square_means'][:,0],
-               display_data['square_means'][:,1], c='r')
-    ax.set_title('squares')    
+    ax.scatter(display_data['square_means'][:, 0],
+               display_data['square_means'][:, 1], c='r')
+    ax.set_title('squares')
 
     # Plot squares that are close enough in size
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]         
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(np.zeros_like(display_data['img']), cmap='Greys')
     plot_contours(display_data['filtered_squares'], ax=ax, color='w')
-    ax.scatter(display_data['filtered_square_means'][:,0],
-               display_data['filtered_square_means'][:,1], c='r')
+    ax.scatter(display_data['filtered_square_means'][:, 0],
+               display_data['filtered_square_means'][:, 1], c='r')
     ax.set_title('filtered_squares')
 
     # recoordinatized
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(np.zeros_like(display_data['img']), cmap='Greys')
-    plot_contours(display_data['filtered_squares'], ax=ax, color='w')    
-    ax.scatter(display_data['filtered_square_means'][:,0],
-               display_data['filtered_square_means'][:,1], c='r')
-    plot_contours(display_data['recoord_squares'], ax=ax, color='y')        
-    ax.scatter(display_data['recoord_square_means'][:,0],
-               display_data['recoord_square_means'][:,1], c='C1')
+    plot_contours(display_data['filtered_squares'], ax=ax, color='w')
+    ax.scatter(display_data['filtered_square_means'][:, 0],
+               display_data['filtered_square_means'][:, 1], c='r')
+    plot_contours(display_data['recoord_squares'], ax=ax, color='y')
+    ax.scatter(display_data['recoord_square_means'][:, 0],
+               display_data['recoord_square_means'][:, 1], c='C1')
     ax.set_title('recoordinatized')
 
     # recoordinatized
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]
-    ax.imshow(cv.cvtColor(display_data['img'], cv.COLOR_RGB2GRAY), cmap='Greys_r')        
-    plot_contours(display_data['recoord_squares'], ax=ax, color='lime')        
-    ax.scatter(display_data['recoord_square_means'][:,0],
-               display_data['recoord_square_means'][:,1], c='lime')
-    ax.set_title('recoordinatized')    
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
+    ax.imshow(cv.cvtColor(display_data['img'],
+              cv.COLOR_RGB2GRAY), cmap='Greys_r')
+    plot_contours(display_data['recoord_squares'], ax=ax, color='lime')
+    ax.scatter(display_data['recoord_square_means'][:, 0],
+               display_data['recoord_square_means'][:, 1], c='lime')
+    ax.set_title('recoordinatized')
 
     # extract faces
     i_plot += 1
-    ax=axs[ int(i_plot / m_plot) ][ i_plot % m_plot ]
+    ax = axs[int(i_plot / m_plot)][i_plot % m_plot]
     ax.imshow(display_data['faces'])
     for i in range(3):
         ax.plot([0, 150], [50 * i, 50 * i], c='k')
-        ax.plot([50 * i, 50 * i], [0, 150], c='k')        
-    ax.set_xlim([0,150])
-    ax.set_ylim([0,150])
+        ax.plot([50 * i, 50 * i], [0, 150], c='k')
+    ax.set_xlim([0, 150])
+    ax.set_ylim([0, 150])
     ax.set_title('extracted squares')
-    
+
     plt.draw()
 
     return axs
 
+
 def extract_squares_from_image(input_file):
     fig, axs = create_display_plot()
-    
+
     # if input_file is None:
     #     plt.ion()
     #     plt.show()
     #     cap = cv.VideoCapture(0)
 
     #     captured_faces = []
-        
+
     #     while True:
     #         img_bgr, retake_image, exit_program = capture_image(cap)
 
     #         if retake_image and len(captured_faces) > 0:
     #             captured_faces.pop()
-                
+
     #         elif exit_program:
     #             break
-            
+
     #         else:
     #             faces, display_data = process_frame(img_bgr)
     #             display_result(display_data, axs)
     #             captured_faces.append(faces)
 
-    #     plt.ioff()    
+    #     plt.ioff()
 
     try:
         img_bgr = cv.imread(input_file, 3)
@@ -671,66 +710,68 @@ def extract_squares_from_image(input_file):
         )
         captured_faces = []
         captured_faces.append(manual_square_extractor.faces)
-        
+
     plt.show()
 
     return captured_faces
+
 
 class retake_handler:
     def __init__(self, fig):
         self.k = None
         self.fig = fig
-        
+
     def retake(self, event):
-        sys.stdout.flush()        
+        sys.stdout.flush()
         self.k = event.key
 
+
 def review_faces(captured_faces):
-    fig, axs = plt.subplots(2,3) 
+    fig, axs = plt.subplots(2, 3)
     clear_plot_axes(axs)
-    
-    rh = retake_handler(fig)    
+
+    rh = retake_handler(fig)
     cid = fig.canvas.mpl_connect('key_press_event', rh.retake)
     plt.suptitle('Press r to retake last. q to quit.')
-    
+
     for i in range(2):
         for j in range(3):
-            #axs[i][j].imshow(np.flipud(captured_faces[3*i+j]))
+            # axs[i][j].imshow(np.flipud(captured_faces[3*i+j]))
             axs[i][j].imshow(captured_faces[3*i+j])
     plt.draw()
 
     key_press = False
-    while key_press != True and rh.k not in ['r','R','q','Q']:
+    while key_press != True and rh.k not in ['r', 'R', 'q', 'Q']:
         key_press = plt.waitforbuttonpress()
 
     plt.disconnect(cid)
     plt.close(fig)
 
     return (rh.k == 'r' or rh.k == 'R')
-    
+
 
 def capture_faces():
-    fig, ax = plt.subplots()    
+    fig, ax = plt.subplots()
     plt.ion()
     plt.show()
     cap = cv.VideoCapture(0)
-    
+
     captured_faces = []
-    captured_imgs  = []
-    
+    captured_imgs = []
+
     for i in range(6):
-        img_bgr, retake_image, exit_program = capture_image(cap)        
+        img_bgr, retake_image, exit_program = capture_image(cap)
         captured_imgs.append(img_bgr)
         ax.imshow(cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB))
 
-    cap.release()                
+    cap.release()
     cv.destroyAllWindows()
     plt.close(fig)
     plt.ioff()
 
     for img_bgr in captured_imgs:
         try:
-           faces, display_data = process_frame(img_bgr)
+            faces, display_data = process_frame(img_bgr)
         except:
             manual_square_extractor = ManualSquareExtractor(
                 cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
@@ -738,23 +779,23 @@ def capture_faces():
             plt.show()
             #faces = np.flip(manual_square_extractor.faces, 0)
             faces = manual_square_extractor.faces
-            
+
         captured_faces.append(np.copy(faces))
-        
+
     return captured_faces, captured_imgs
 
 
 def capture_faces_from_images(input_imgs):
-    captured_imgs  = []
+    captured_imgs = []
     captured_faces = []
 
     for img_rgb in input_imgs:
         #img_bgr = cv.cvtColor(img_rgb, cv.COLOR_RGB2BGR)
         img_bgr = img_rgb
         captured_imgs.append(img_bgr)
-        
+
         try:
-           faces, display_data = process_frame(img_bgr)
+            faces, display_data = process_frame(img_bgr)
         except:
             manual_square_extractor = ManualSquareExtractor(
                 cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
@@ -763,18 +804,19 @@ def capture_faces_from_images(input_imgs):
             #faces = np.flip(manual_square_extractor.faces, 0)
             faces = manual_square_extractor.faces
         captured_faces.append(np.copy(faces))
-        
+
     return captured_faces, captured_imgs
-    
+
 
 def load_imgs(img_file_list):
     input_imgs = []
-    
+
     for input_file in img_file_list:
         img_rgb = cv.imread(input_file, 3)
         input_imgs.append(img_rgb)
 
     return input_imgs
+
 
 def load_imgs_from_dir(img_dir):
     img_file_list = [os.path.join(img_dir, f) for f in os.listdir(img_dir)
@@ -784,34 +826,35 @@ def load_imgs_from_dir(img_dir):
 
     return input_imgs
 
+
 def extract_cube_faces_from_stream():
     fig, axs = create_display_plot()
-    
+
     plt.ion()
     plt.show()
     cap = cv.VideoCapture(0)
-    
+
     captured_faces = []
-    captured_imgs  = []
-    
+    captured_imgs = []
+
     while True:
         img_bgr, retake_image, exit_program = capture_image(cap)
-        
+
         if retake_image and len(captured_faces) > 0:
             captured_faces.pop()
             captured_imgs.pop()
-            
+
         elif exit_program:
             break
-        
+
         else:
             try:
-                faces, display_data = process_frame(img_bgr)                
+                faces, display_data = process_frame(img_bgr)
             except:
                 manual_square_extractor = ManualSquareExtractor(
                     cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
                 )
-                
+
                 while manual_square_extractor.faces is None:
                     plt.pause(1.5)
 
@@ -819,20 +862,20 @@ def extract_cube_faces_from_stream():
                 plt.close(manual_square_extractor.fig)
 
             else:
-                display_result(display_data, axs)                
+                display_result(display_data, axs)
                 captured_faces.append(faces)
                 captured_imgs.append(cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB))
-            
+
         if len(captured_faces) > 5:
             pop_last = review_faces(captured_faces)
-            
+
             if pop_last:
                 captured_faces.pop()
                 captured_imgs.pop()
             else:
                 break
-            
-    plt.ioff()    
+
+    plt.ioff()
     cv.destroyAllWindows()
     return captured_faces, captured_imgs
 
@@ -842,4 +885,3 @@ if __name__ == '__main__':
         captured_faces, captured_imgs = extract_cube_faces_from_stream()
     else:
         captured_faces = extract_squares_from_image(sys.argv[1])
-    
